@@ -196,7 +196,7 @@ CLIMATE_SWING_VERTICAL_LEVEL = "0x0F"
 CLIMATE_SWING_HORIZONTAL = "0x10"
 CLIMATE_SWING_HORIZONTAL_LEVEL = "0x11"
 CLIMATE_SET_HUMIDITY = "0x13"
-CLIMATE_HUMIDITY_INDOOR = "0x14"
+CLIMATE_HUMIDITY_INDOOR = "0x57"
 CLIMATE_ERROR_CODE = "0x15"
 CLIMATE_ANTI_MILDEW = "0x17"
 CLIMATE_AUTO_CLEAN = "0x18"
@@ -211,6 +211,8 @@ CLIMATE_OPERATING_POWER = "0x27"
 CLIMATE_ENERGY = "0x28"
 CLIMATE_PM25 = "0x37"
 CLIMATE_MONITOR_MILDEW = "0x53"
+CLIMATE_IMMEDIATE_MILDEW_DRY = "0x55"
+CLIMATE_VOICE = "0x59"
 CLIMATE_61 = "0x61"
 CLIMATE_RESERVED = "0x7F"
 CLIMATE_PRESET_MODE = "0x80"
@@ -231,6 +233,7 @@ CLIMATE_RX_COMMANDS = [
                 CLIMATE_61
             ]
 CLIMATE_PXGD_COMMMANDS = []
+CLIMATE_VX_COMMMANDS = []
 CLIMATE_PXGD_MODELS = [
     "J-DUCT", "SX-DUCT", "GX", "LJ", "LX", "PX", "QX", "LJV", "PXGD" "RX-N"
 ]
@@ -623,6 +626,7 @@ COMMANDS_TYPE= {
 EXTRA_COMMANDS = {
     str(DEVICE_TYPE_CLIMATE): {
 #        "RX-N": CLIMATE_RX_COMMANDS + [CLIMATE_MONITOR_MILDEW],
+        "VX": CLIMATE_VX_COMMMANDS,
         "RX-N": CLIMATE_RX_COMMANDS,
         "RX-G": CLIMATE_RX_COMMANDS,
         "RX-J": CLIMATE_RX_COMMANDS
@@ -705,7 +709,8 @@ SET_COMMAND_TYPE = {
         CLIMATE_ACTIVITY: 153,
         CLIMATE_BOOST: 154,
         CLIMATE_AUTO_CLEAN: 155,
-        CLIMATE_INDICATOR_LIGHT: 159
+        CLIMATE_INDICATOR_LIGHT: 159,
+        CLIMATE_MONITOR_MILDEW: 211
     },
     str(DEVICE_TYPE_DEHUMIDIFIER): {
         DEHUMIDIFIER_POWER: 128,
@@ -1112,6 +1117,14 @@ AIRPURIFIER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
 
 CLIMATE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     PanasonicSelectDescription(
+        key=CLIMATE_IMMEDIATE_MILDEW_DRY,
+        name="Immediate Mildew Dry",
+        entity_category=EntityCategory.CONFIG,
+        icon='mdi:weather-dust',
+        options=["Off", "10 min", "20 min", "40 min", "60 min"],
+        options_value=["0", "1", "2", "3", "4"]
+    ),
+    PanasonicSelectDescription(
         key=CLIMATE_FUZZY_MODE,
         name="Fuzzy Mode",
         entity_category=EntityCategory.CONFIG,
@@ -1348,6 +1361,14 @@ AIRPURIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
 )
 
 CLIMATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
+    PanasonicSensorDescription(
+        key=CLIMATE_HUMIDITY_INDOOR,
+        name="Indoor Humidity",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.HUMIDITY,
+        icon="mdi:water-percent"
+    ),
     PanasonicSensorDescription(
         key=CLIMATE_TEMPERATURE_INDOOR,
         name="Inside Temperature",
@@ -1710,6 +1731,18 @@ AIRPURIFIER_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
 )
 
 CLIMATE_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
+    PanasonicSwitchDescription(
+        key=CLIMATE_MONITOR_MILDEW,
+        name="Mildew Monitor",
+        device_class=SwitchDeviceClass.SWITCH,
+        icon='mdi:mushroom'
+    ),
+    PanasonicSwitchDescription(
+        key=CLIMATE_VOICE,
+        name="Voice Control",
+        device_class=SwitchDeviceClass.SWITCH,
+        icon='mdi:account-voice'
+    ),
     PanasonicSwitchDescription(
         key=CLIMATE_AIRFRESH_MODE,
         name=" nanoe™ X",
