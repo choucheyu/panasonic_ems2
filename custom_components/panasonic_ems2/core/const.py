@@ -234,6 +234,9 @@ CLIMATE_RX_COMMANDS = [
 ]
 CLIMATE_PXGD_COMMMANDS = [
 ]
+CLIMATE_PXGD_SUPPLEMENTAL_COMMANDS = [
+                CLIMATE_PM25,
+            ]
 CLIMATE_VX_COMMMANDS = [
             #    CLIMATE_MONITOR_MILDEW,
             #    CLIMATE_IMMEDIATE_MILDEW_DRY,
@@ -696,6 +699,7 @@ EXTRA_COMMANDS = {
 
 SUPPLEMENTAL_COMMANDS = {
     str(DEVICE_TYPE_CLIMATE): {
+        "PXGD": CLIMATE_PXGD_SUPPLEMENTAL_COMMANDS,
         "VX": CLIMATE_VX_SUPPLEMENTAL_COMMANDS,
     }
 }
@@ -738,7 +742,7 @@ SET_COMMAND_TYPE = {
         CLIMATE_POWER: 128,
         CLIMATE_OPERATING_MODE: 129,
         CLIMATE_FAN_SPEED: 130,
-        CLIMATE_ECO: 136,
+        CLIMATE_ECO: 155,
         CLIMATE_TIMER_ON: 139,
         CLIMATE_TIMER_OFF: 140,
         CLIMATE_SWING_MODE: 143,
@@ -1177,6 +1181,14 @@ CLIMATE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
         icon='mdi:lightbulb',
         options=["亮", "暗", "ECO燈滅"],
         options_value=["0", "1", "2"]
+    ),
+    PanasonicSelectDescription(
+        key=CLIMATE_FAN_SPEED,
+        name="風量",
+        entity_category=EntityCategory.CONFIG,
+        icon='mdi:fan',
+        options=["自動", "1", "2", "3", "4", "5"],
+        options_value=["0", "1", "2", "3", "4", "5"]
     ),
     PanasonicSelectDescription(
         key=CLIMATE_SWING_VERTICAL_LEVEL,
@@ -1800,6 +1812,24 @@ CLIMATE_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
         name="防霉監控",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:mushroom'
+    ),
+    PanasonicSwitchDescription(
+        key=CLIMATE_SLEEP_MODE,
+        name="睡眠",
+        device_class=SwitchDeviceClass.SWITCH,
+        icon='mdi:sleep'
+    ),
+    PanasonicSwitchDescription(
+        key=CLIMATE_BOOST,
+        name="急速",
+        device_class=SwitchDeviceClass.SWITCH,
+        icon='mdi:rocket-launch'
+    ),
+    PanasonicSwitchDescription(
+        key=CLIMATE_ECO,
+        name="ECONAVI",
+        device_class=SwitchDeviceClass.SWITCH,
+        icon='mdi:sprout'
     ),
     PanasonicSwitchDescription(
         key=CLIMATE_VOICE,
