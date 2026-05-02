@@ -219,9 +219,9 @@ CLIMATE_PRESET_MODE = "0x80"
 CLIMATE_SWING_MODE = "0x81"
 
 CLIMATE_AVAILABLE_PRESET_MODES = {
-    CLIMATE_ACTIVITY: PRESET_ACTIVITY,
+#    CLIMATE_ACTIVITY: PRESET_ACTIVITY,
     CLIMATE_BOOST: PRESET_BOOST,
-    CLIMATE_COMFORT: PRESET_COMFORT,
+#    CLIMATE_COMFORT: PRESET_COMFORT,
     CLIMATE_ECO: PRESET_ECO,
     CLIMATE_SLEEP_MODE: PRESET_SLEEP
 }
@@ -231,11 +231,30 @@ CLIMATE_RX_COMMANDS = [
                 CLIMATE_OPERATING_POWER,
                 CLIMATE_PM25,
                 CLIMATE_61
+]
+CLIMATE_PXGD_COMMMANDS = [
+]
+CLIMATE_VX_COMMMANDS = [
+            #    CLIMATE_MONITOR_MILDEW,
+            #    CLIMATE_IMMEDIATE_MILDEW_DRY,
+            #    CLIMATE_HUMIDITY_INDOOR,
+            #    CLIMATE_VOICE,
+            #    CLIMATE_PM25
+]
+# Supplemental read-path checklist for new climate keys:
+# 1. define CLIMATE_XXX = "0x.."
+# 2. add the key to the appropriate *_SUPPLEMENTAL_COMMANDS list / SUPPLEMENTAL_COMMANDS
+# 3. add an entity description in CLIMATE_SENSORS / CLIMATE_SWITCHES / CLIMATE_SELECTS
+# 4. if the key is writable, add SET_COMMAND_TYPE mapping (for example 0x53->211, 0x55->213, 0x59->217)
+CLIMATE_VX_SUPPLEMENTAL_COMMANDS = [
+                CLIMATE_PM25,
+                CLIMATE_MONITOR_MILDEW,
+                CLIMATE_IMMEDIATE_MILDEW_DRY,
+                CLIMATE_HUMIDITY_INDOOR,
+                CLIMATE_VOICE,
             ]
-CLIMATE_PXGD_COMMMANDS = []
-CLIMATE_VX_COMMMANDS = []
 CLIMATE_PXGD_MODELS = [
-    "J-DUCT", "SX-DUCT", "GX", "LJ", "LX", "PX", "QX", "LJV", "PXGD" "RX-N"
+    "J-DUCT", "SX-DUCT", "GX", "LJ", "LX", "PX", "QX", "LJV" ,"PXGD", "VX"
 ]
 
 CLIMATE_PM10_MODELS = [
@@ -247,7 +266,7 @@ CLIMATE_PM10_2_MODELS = [
 ]
 
 CLIMATE_PM25_MODELS = [
-    "EHW", "GHW", "JHW", "JHV2"
+    "EHW", "GHW", "JHW", "JHV2" ,"VX"
 ]
 
 DEHUMIDIFIER_POWER = "0x00"
@@ -626,7 +645,8 @@ COMMANDS_TYPE= {
 EXTRA_COMMANDS = {
     str(DEVICE_TYPE_CLIMATE): {
 #        "RX-N": CLIMATE_RX_COMMANDS + [CLIMATE_MONITOR_MILDEW],
-        "VX": CLIMATE_VX_COMMMANDS,
+#        "PXGD": CLIMATE_PXGD_COMMMANDS,
+          "VX": CLIMATE_VX_COMMMANDS,
         "RX-N": CLIMATE_RX_COMMANDS,
         "RX-G": CLIMATE_RX_COMMANDS,
         "RX-J": CLIMATE_RX_COMMANDS
@@ -660,6 +680,12 @@ EXTRA_COMMANDS = {
         "LMS": WASHING_MACHINE_KBS_COMMANDS
     },
     str(DEVICE_TYPE_AIRPURIFIER): {
+    }
+}
+
+SUPPLEMENTAL_COMMANDS = {
+    str(DEVICE_TYPE_CLIMATE): {
+        "VX": CLIMATE_VX_SUPPLEMENTAL_COMMANDS,
     }
 }
 
@@ -697,7 +723,6 @@ SET_COMMAND_TYPE = {
         CLIMATE_TARGET_TEMPERATURE: 3,
         CLIMATE_SLEEP_MODE: 5,
         CLIMATE_ANTI_MILDEW: 23,
-        CLIMATE_AUTO_CLEAN: 24,
         CLIMATE_BUZZER: 30,
         CLIMATE_POWER: 128,
         CLIMATE_OPERATING_MODE: 129,
@@ -708,9 +733,11 @@ SET_COMMAND_TYPE = {
         CLIMATE_SWING_MODE: 143,
         CLIMATE_ACTIVITY: 153,
         CLIMATE_BOOST: 154,
-        CLIMATE_AUTO_CLEAN: 155,
+        CLIMATE_AUTO_CLEAN: 152,
         CLIMATE_INDICATOR_LIGHT: 159,
-        CLIMATE_MONITOR_MILDEW: 211
+        CLIMATE_MONITOR_MILDEW: 211,
+        CLIMATE_IMMEDIATE_MILDEW_DRY: 213,
+        CLIMATE_VOICE: 217
     },
     str(DEVICE_TYPE_DEHUMIDIFIER): {
         DEHUMIDIFIER_POWER: 128,
@@ -780,7 +807,7 @@ class PanasonicBinarySensorDescription(
 AIRPURIFIER_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
     PanasonicBinarySensorDescription(
         key=ENTITY_UPDATE,
-        name="Firmware Update",
+        name="版本更新",
         icon='mdi:package-up',
         device_class=BinarySensorDeviceClass.UPDATE
     ),
@@ -794,13 +821,13 @@ AIRPURIFIER_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
 CLIMATE_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
     PanasonicBinarySensorDescription(
         key=ENTITY_UPDATE,
-        name="Firmware Update",
+        name="版本更新",
         icon='mdi:package-up',
         device_class=BinarySensorDeviceClass.UPDATE
     ),
     PanasonicBinarySensorDescription(
         key=ENTITY_EMPTY,
-        name="Empty",
+        name="空",
         icon='mdi:cog'
     )
 )
@@ -808,13 +835,13 @@ CLIMATE_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
 DEHUMIDIFIER_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
     PanasonicBinarySensorDescription(
         key=ENTITY_UPDATE,
-        name="Firmware Update",
+        name="版本更新",
         icon='mdi:package-up',
         device_class=BinarySensorDeviceClass.UPDATE
     ),
     PanasonicBinarySensorDescription(
         key=DEHUMIDIFIER_WATER_TANK_STATUS,
-        name="Water Tank",
+        name="水箱",
         icon='mdi:cup-water'
     )
 )
@@ -822,13 +849,13 @@ DEHUMIDIFIER_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
 DRYER_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
     PanasonicBinarySensorDescription(
         key=ENTITY_UPDATE,
-        name="Firmware Update",
+        name="版本更新",
         icon='mdi:package-up',
         device_class=BinarySensorDeviceClass.UPDATE
     ),
     PanasonicBinarySensorDescription(
         key=ENTITY_EMPTY,
-        name="Empty",
+        name="空",
         icon='mdi:cog'
     )
 )
@@ -836,13 +863,13 @@ DRYER_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
 ERV_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
     PanasonicBinarySensorDescription(
         key=ENTITY_UPDATE,
-        name="Firmware Update",
+        name="版本更新",
         icon='mdi:package-up',
         device_class=BinarySensorDeviceClass.UPDATE
     ),
     PanasonicBinarySensorDescription(
         key=ENTITY_EMPTY,
-        name="Empty",
+        name="空",
         icon='mdi:cog'
     )
 )
@@ -850,13 +877,13 @@ ERV_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
 FRIDGE_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
     PanasonicBinarySensorDescription(
         key=ENTITY_UPDATE,
-        name="Firmware Update",
+        name="版本更新",
         icon='mdi:package-up',
         device_class=BinarySensorDeviceClass.UPDATE
     ),
     PanasonicBinarySensorDescription(
         key=ENTITY_EMPTY,
-        name="Empty",
+        name="空",
         icon='mdi:cog'
     )
 )
@@ -864,13 +891,13 @@ FRIDGE_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
 LIGHT_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
     PanasonicBinarySensorDescription(
         key=ENTITY_UPDATE,
-        name="Firmware Update",
+        name="版本更新",
         icon='mdi:package-up',
         device_class=BinarySensorDeviceClass.UPDATE
     ),
     PanasonicBinarySensorDescription(
         key=ENTITY_EMPTY,
-        name="Empty",
+        name="空",
         icon='mdi:cog'
     )
 )
@@ -878,13 +905,13 @@ LIGHT_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
 WASHING_MACHINE_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
     PanasonicBinarySensorDescription(
         key=ENTITY_UPDATE,
-        name="Firmware Update",
+        name="版本更新",
         icon='mdi:package-up',
         device_class=BinarySensorDeviceClass.UPDATE
     ),
     PanasonicBinarySensorDescription(
         key=ENTITY_EMPTY,
-        name="Empty",
+        name="空",
         icon='mdi:cog'
     )
 )
@@ -900,7 +927,7 @@ class PanasonicNumberDescription(
 AIRPURIFIER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     PanasonicNumberDescription(
         key=AIRPURIFIER_TIMER_ON,
-        name="Timer On",
+        name="定時開啟",
         native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog-outline',
@@ -911,7 +938,7 @@ AIRPURIFIER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     ),
     PanasonicNumberDescription(
         key=AIRPURIFIER_TIMER_OFF,
-        name="Timer Off",
+        name="定時關閉",
         native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog',
@@ -925,7 +952,7 @@ AIRPURIFIER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
 CLIMATE_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     PanasonicNumberDescription(
         key=CLIMATE_TIMER_ON,
-        name="Timer On",
+        name="時間到開",
         native_unit_of_measurement=UnitOfTime.MINUTES,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog-outline',
@@ -936,7 +963,7 @@ CLIMATE_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     ),
     PanasonicNumberDescription(
         key=CLIMATE_TIMER_OFF,
-        name="Timer Off",
+        name="時間到關",
         native_unit_of_measurement=UnitOfTime.MINUTES,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog',
@@ -950,7 +977,7 @@ CLIMATE_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
 DEHUMIDIFIER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     PanasonicNumberDescription(
         key=DEHUMIDIFIER_TIMER_ON,
-        name="Timer On",
+        name="定時開啟",
         native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog-outline',
@@ -961,7 +988,7 @@ DEHUMIDIFIER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     ),
     PanasonicNumberDescription(
         key=DEHUMIDIFIER_TIMER_OFF,
-        name="Timer Off",
+        name="定時關閉",
         native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog',
@@ -975,7 +1002,7 @@ DEHUMIDIFIER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
 DRYER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     PanasonicNumberDescription(
         key=DRYER_OPERATING_TIME,
-        name="Operating Time",
+        name="運轉時間",
         native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog-outline',
@@ -989,7 +1016,7 @@ DRYER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
 ERV_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     PanasonicNumberDescription(
         key=ERV_TARGET_TEMPERATURE,
-        name="Target Temperature",
+        name="目標溫度",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:thermometer',
@@ -1000,7 +1027,7 @@ ERV_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     ),
     PanasonicNumberDescription(
         key=ERV_TIMER_ON,
-        name="Timer On",
+        name="定時開啟",
         native_unit_of_measurement=UnitOfTime.MINUTES,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog',
@@ -1014,7 +1041,7 @@ ERV_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
 LIGHT_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     PanasonicNumberDescription(
         key=LIGHT_CHANNEL_1_TIMER_ON,
-        name="Channel 1 Timer On",
+        name="頻道1定時開啟",
         native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog-outline',
@@ -1025,7 +1052,7 @@ LIGHT_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     ),
     PanasonicNumberDescription(
         key=LIGHT_CHANNEL_1_TIMER_OFF,
-        name="Channel 1 Timer Off",
+        name="頻道1定時關閉",
         native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog',
@@ -1036,7 +1063,7 @@ LIGHT_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     ),
     PanasonicNumberDescription(
         key=LIGHT_CHANNEL_2_TIMER_ON,
-        name="Channel 2 Timer On",
+        name="頻道2定時開啟",
         native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog-outline',
@@ -1047,7 +1074,7 @@ LIGHT_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     ),
     PanasonicNumberDescription(
         key=LIGHT_CHANNEL_2_TIMER_OFF,
-        name="Channel 2 Timer Off",
+        name="頻道2定時關閉",
         native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog',
@@ -1058,7 +1085,7 @@ LIGHT_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     ),
     PanasonicNumberDescription(
         key=LIGHT_CHANNEL_3_TIMER_ON,
-        name="Channel 3 Timer On",
+        name="頻道3定時開啟",
         native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog-outline',
@@ -1069,7 +1096,7 @@ LIGHT_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     ),
     PanasonicNumberDescription(
         key=LIGHT_CHANNEL_3_TIMER_OFF,
-        name="Channel 3 Timer Off",
+        name="頻道3定時關閉",
         native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.CONFIG,
         icon='mdi:timer-cog',
@@ -1091,7 +1118,7 @@ class PanasonicSelectDescription(
 AIRPURIFIER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     PanasonicSelectDescription(
         key=AIRPURIFIER_LIGHT,
-        name="Light",
+        name="燈光",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:brightness-5',
         options=["Light", "Dark", "Off"],
@@ -1099,7 +1126,7 @@ AIRPURIFIER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     ),
     PanasonicSelectDescription(
         key=AIRPURIFIER_OPERATING_MODE,
-        name="Fan Mode",
+        name="風扇模式",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:fan',
         options=["Auto", "Mute", "Week", "Middle", "Strong"],
@@ -1117,14 +1144,6 @@ AIRPURIFIER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
 
 CLIMATE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     PanasonicSelectDescription(
-        key=CLIMATE_IMMEDIATE_MILDEW_DRY,
-        name="Immediate Mildew Dry",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:weather-dust',
-        options=["Off", "10 min", "20 min", "40 min", "60 min"],
-        options_value=["0", "1", "2", "3", "4"]
-    ),
-    PanasonicSelectDescription(
         key=CLIMATE_FUZZY_MODE,
         name="Fuzzy Mode",
         entity_category=EntityCategory.CONFIG,
@@ -1134,42 +1153,50 @@ CLIMATE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     ),
     PanasonicSelectDescription(
         key=CLIMATE_ACTIVITY,
-        name="Motion Detect",
+        name="動向感應",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:motion-sensor',
-        options=["Off", "To human", "Not to human", "Auto"],
+        options=["關", "對人", "不對人", "自動"],
         options_value=["0", "1", "2", "3"]
     ),
     PanasonicSelectDescription(
         key=CLIMATE_INDICATOR_LIGHT,
-        name="Indicator Light",
+        name="機體燈光",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:lightbulb',
-        options=["Light", "Dark", "Off"],
+        options=["亮", "暗", "ECO燈滅"],
         options_value=["0", "1", "2"]
     ),
     PanasonicSelectDescription(
         key=CLIMATE_SWING_VERTICAL_LEVEL,
-        name="Vertical Fan Level",
+        name="上下風向",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:fan',
-        options=["Auto", "1", "2", "3", "4"],
-        options_value=["0", "1", "2", "3", "4"],
+        options=["自動", "1", "2", "3", "4"],
+        options_value=["0", "1", "2", "3", "4"]
     ),
     PanasonicSelectDescription(
         key=CLIMATE_SWING_HORIZONTAL_LEVEL,
-        name="Horizontal Fan Level",
+        name="左右風向",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:fan',
-        options=["Auto", "1", "2", "3", "4"],
-        options_value=["0", "1", "2", "3", "4"],
+        options=["自動", "1", "2", "3", "4", "5", "6", "7"],
+        options_value=["0", "1", "2", "3", "4", "5", "6", "7"]
     ),
+        PanasonicSelectDescription(
+        key=CLIMATE_IMMEDIATE_MILDEW_DRY,
+        name="立即乾燥防霉",
+        entity_category=EntityCategory.CONFIG,
+        icon='mdi:weather-dust',
+        options=["關閉", "10分鐘行程", "20分鐘行程", "40分鐘行程", "60分鐘行程"],
+        options_value=["0", "1", "2", "3", "4"]
+    )
 )
 
 DEHUMIDIFIER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     PanasonicSelectDescription(
         key=DEHUMIDIFIER_FAN_SPEED,
-        name="Fan Speed",
+        name="風速",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:fan',
         options=["Auto", "Slience", "Standard", "Speed"],
@@ -1177,7 +1204,7 @@ DEHUMIDIFIER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     ),
     PanasonicSelectDescription(
         key=DEHUMIDIFIER_FAN_MODE,
-        name="Fan Mode",
+        name="風扇模式",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:fan-speed-1',
         options=["Fixed", "Down", "Up", "Both", "Side"],
@@ -1188,7 +1215,7 @@ DEHUMIDIFIER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
 DRYER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     PanasonicSelectDescription(
         key=DRYER_OPERATING_STATUS,
-        name="Operating Status",
+        name="運轉狀態",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:cog',
         options=["Stopping", "Pause", "Working"],
@@ -1196,7 +1223,7 @@ DRYER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     ),
     PanasonicSelectDescription(
         key=DRYER_HEATING_STATUS,
-        name="Heating Status",
+        name="加熱狀態",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:cog',
         options=["Weak", "Strong"],
@@ -1204,7 +1231,7 @@ DRYER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     ),
     PanasonicSelectDescription(
         key=DRYER_OPERATING_MODE,
-        name="Operating Mode",
+        name="運轉模式",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:hanger',
         options=["Standard", "Thick Clothes", "Long Time", "Short Time", "Reserved"],
@@ -1212,13 +1239,13 @@ DRYER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     ),
     PanasonicSelectDescription(
         key=DRYER_OPERATING_MODE_NEW,
-        name="Operating Mode",
+        name="運轉模式",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:hanger'
     ),
     PanasonicSelectDescription(
         key=DRYER_STATUS,
-        name="Drying Status",
+        name="烘乾狀態",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:cog',
         options=["Fan Only", "Drying"],
@@ -1226,7 +1253,7 @@ DRYER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     ),
     PanasonicSelectDescription(
         key=DRYER_FAN_SPEED,
-        name="Fan Speed",
+        name="風速",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:fan',
         options=["Low", "Middle", "High"],
@@ -1237,7 +1264,7 @@ DRYER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
 ERV_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     PanasonicSelectDescription(
         key=ERV_VENTILATE_MODE,
-        name="Ventilate Mode",
+        name="換氣模式",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:home-thermometer',
         options=["Auto", "Ventilate", "Normal"],
@@ -1283,7 +1310,7 @@ FRIDGE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
 WASHING_MACHINE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     PanasonicSelectDescription(
         key=WASHING_MACHINE_PROGRESS,
-        name="Progress",
+        name="行程",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:washing-machine',
         options=["Standard", "Soft Wash", "Strong Wash", "Wash with Shirt", "Wash with Blanket", "Wash with High-end clothing", "Wash with Woolen fabrics", "User-defined Wash", "Soak Wash", "Dry Clean", "Quick Wash", "Tank Wash", "Wash with Warm Water"],
@@ -1291,7 +1318,7 @@ WASHING_MACHINE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     ),
     PanasonicSelectDescription(
         key=WASHING_MACHINE_TIMER,
-        name="Appointment Time",
+        name="預約時間",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:clock',
         options=["0", "1", "2", "3"],
@@ -1299,7 +1326,7 @@ WASHING_MACHINE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     ),
     PanasonicSelectDescription(
         key=WASHING_MACHINE_POSTPONE_DRYING,
-        name="Postpone Drying",
+        name="延後烘乾",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:clock',
         options=["Off", "1", "2", "3", "4", "5", "6", "7", "8"],
@@ -1318,7 +1345,7 @@ class PanasonicSensorDescription(
 AIRPURIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
         key=AIRPURIFIER_AIR_QUALITY,
-        name="Air Quality",
+        name="空氣品質",
         device_class= SensorDeviceClass.AQI,
         icon='mdi:leaf'
     ),
@@ -1340,19 +1367,19 @@ AIRPURIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=AIRPURIFIER_RUNNING_TIME,
-        name="Running Time",
+        name="運行時間",
         native_unit_of_measurement=UnitOfTime.MINUTES,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:clock-outline"
     ),
     PanasonicSensorDescription(
         key=AIRPURIFIER_ERROR_CODE,
-        name="Error Code",
+        name="錯誤代碼",
         icon="mdi:alert-circle"
     ),
     PanasonicSensorDescription(
         key=AIRPURIFIER_ENERGY,
-        name="Energy",
+        name="用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -1362,16 +1389,8 @@ AIRPURIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
 
 CLIMATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
-        key=CLIMATE_HUMIDITY_INDOOR,
-        name="Indoor Humidity",
-        native_unit_of_measurement=PERCENTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.HUMIDITY,
-        icon="mdi:water-percent"
-    ),
-    PanasonicSensorDescription(
         key=CLIMATE_TEMPERATURE_INDOOR,
-        name="Inside Temperature",
+        name="室內溫度",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -1379,12 +1398,12 @@ CLIMATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=CLIMATE_ERROR_CODE,
-        name="Error Code",
+        name="錯誤代碼",
         icon="mdi:alert-circle"
     ),
     PanasonicSensorDescription(
         key=CLIMATE_TEMPERATURE_OUTDOOR,
-        name="Outside Temperature",
+        name="室外溫度",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -1400,18 +1419,26 @@ CLIMATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=CLIMATE_ENERGY,
-        name="Energy",
+        name="用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
         icon="mdi:flash"
+    ),
+        PanasonicSensorDescription(
+        key=CLIMATE_HUMIDITY_INDOOR,
+        name="室內濕度",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.HUMIDITY,
+        icon="mdi:water-percent"
     )
 )
 
 DEHUMIDIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
         key=DEHUMIDIFIER_HUMIDITY_INDOOR,
-        name="Indoor Humidity",
+        name="室內濕度",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.HUMIDITY,
@@ -1435,7 +1462,7 @@ DEHUMIDIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=DEHUMIDIFIER_ENERGY,
-        name="Energy",
+        name="用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -1443,7 +1470,7 @@ DEHUMIDIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=DEHUMIDIFIER_ERROR_CODE,
-        name="Error Code",
+        name="錯誤代碼",
         icon="mdi:alert-circle"
     )
 )
@@ -1451,17 +1478,17 @@ DEHUMIDIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
 DRYER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
         key=DRYER_OPERATING_STATUS_NEW,
-        name="Operating Status",
+        name="運轉狀態",
         icon="mdi:tumble-dryer"
     ),
     PanasonicSensorDescription(
         key=DRYER_APPOINTMENT_REMAINING_TIME,
-        name="Remaining Time",
+        name="剩餘時間",
         icon="mdi:timer-outline"
     ),
     PanasonicSensorDescription(
         key=DRYER_ERROR_CODE,
-        name="Error Code",
+        name="錯誤代碼",
         icon="mdi:alert-circle"
     )
 )
@@ -1469,7 +1496,7 @@ DRYER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
 ERV_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
         key=ERV_TEMPERATURE_IN,
-        name="Temperature In",
+        name="進風溫度",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -1477,7 +1504,7 @@ ERV_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=ERV_TEMPERATURE_OUT,
-        name="Temperature Outdoor",
+        name="出風溫度",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -1485,7 +1512,7 @@ ERV_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=ERV_ENERGY,
-        name="Energy",
+        name="用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -1493,7 +1520,7 @@ ERV_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=ERV_ERROR_CODE,
-        name="Error Code",
+        name="錯誤代碼",
         icon="mdi:alert-circle"
     )
 )
@@ -1501,7 +1528,7 @@ ERV_SENSORS: tuple[PanasonicSensorDescription, ...] = (
 FRIDGE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
         key=FRIDGE_FREEZER_TEMPERATURE,
-        name="Freezer Temperature",
+        name="冷凍室溫度",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -1509,7 +1536,7 @@ FRIDGE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=FRIDGE_CHAMBER_TEMPERATURE,
-        name="Chamber Temperature",
+        name="冷藏室溫度",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -1517,7 +1544,7 @@ FRIDGE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=FRIDGE_ENERGY,
-        name="Energy",
+        name="用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -1525,7 +1552,7 @@ FRIDGE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=FRIDGE_THAW_TEMPERATURE,
-        name="Thaw Temperature",
+        name="解凍溫度",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -1533,22 +1560,22 @@ FRIDGE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=FRIDGE_ERROR_CODE,
-        name="Error Code",
+        name="錯誤代碼",
         icon="mdi:alert-circle"
     ),
     PanasonicSensorDescription(
         key=FRIDGE_ERROR_CODE_JP,
-        name="Error Code",
+        name="錯誤代碼",
         icon="mdi:alert-circle"
     ),
     PanasonicSensorDescription(
         key=ENTITY_DOOR_OPENS,
-        name="Monthly Door Open Times",
+        name="每月開門次數",
         icon="mdi:information-slab-symbol"
     ),
     PanasonicSensorDescription(
         key=ENTITY_MONTHLY_ENERGY,
-        name="Monthly Energy",
+        name="每月用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -1559,7 +1586,7 @@ FRIDGE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
 LIGHT_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
         key=LIGHT_OPERATION_STATE,
-        name="Operation Mode",
+        name="運作模式",
         icon='mdi:dip-switch',
 #        options=["All Off", "Channel 1 On", "Channel 2 On", "Channel 1, 2 On", "Channel 3 On", "Channel 1, 3 On", "Channel 2, 3 On", "All On"],
 #        options_value=["0", "1", "2", "3", "4", "5", "6", "7"],
@@ -1574,56 +1601,56 @@ LIGHT_SENSORS: tuple[PanasonicSensorDescription, ...] = (
 WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
         key=WASHING_MACHINE_REMAING_WASH_TIME,
-        name="Washing Remaining Time",
+        name="洗衣剩餘時間",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.MINUTES,
         icon="mdi:clock"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_TIMER_REMAINING_TIME,
-        name="Timer Remaining Time",
+        name="定時剩餘時間",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.MINUTES,
         icon="mdi:clock-outline"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_ERROR_CODE,
-        name="Error Code",
+        name="錯誤代碼",
         icon="mdi:alert-circle"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_CURRENT_MODE,
-        name="Current Mode",
+        name="目前模式",
         device_class=SensorDeviceClass.ENUM,
         icon="mdi:washing-machine"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_CURRENT_PROGRESS,
-        name="Current Progress",
+        name="目前進度",
         device_class=SensorDeviceClass.ENUM,
         icon="mdi:progress-helper"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_OPERATING_STATUS,
-        name="Operating Status",
+        name="運轉狀態",
         device_class=SensorDeviceClass.ENUM,
         icon="mdi:washing-machine"
     ),
     PanasonicSensorDescription(
         key=ENTITY_WASH_TIMES,
-        name="Monthly Washing Times",
+        name="每月洗衣次數",
         icon="mdi:information-slab-symbol"
     ),
     PanasonicSensorDescription(
         key=ENTITY_WATER_USED,
-        name="Monthly Used Water",
+        name="每月用水量",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfVolume.LITERS,
         icon="mdi:water"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_ENERGY,
-        name="Energy",
+        name="用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -1631,7 +1658,7 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_REMOTE_CONTROL,
-        name="Remote Control",
+        name="遙控",
         icon='mdi:cog'
     )
 )
@@ -1639,18 +1666,18 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
 WEIGHT_PLATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
         key=WEIGHT_PLATE_FOOD_NAME,
-        name="Food name",
+        name="食材名稱",
         icon="mdi:food"
     ),
     PanasonicSensorDescription(
         key=WEIGHT_PLATE_BUY_DATE,
-        name="Buy Date",
+        name="購買日期",
         device_class=SensorDeviceClass.TIMESTAMP,
         icon="mdi:clock"
     ),
     PanasonicSensorDescription(
         key=WEIGHT_PLATE_DUE_DATE,
-        name="Due Date",
+        name="到期日",
         device_class=SensorDeviceClass.TIMESTAMP,
         icon="mdi:clock-outline"
     ),
@@ -1666,7 +1693,7 @@ WEIGHT_PLATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=WEIGHT_PLATE_AMOUNT_MAX,
-        name="Max Amount",
+        name="最大數值",
         icon="mdi:cog"
     ),
     PanasonicSensorDescription(
@@ -1681,7 +1708,7 @@ WEIGHT_PLATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=WEIGHT_PLATE_TOTAL_WEIGHT,
-        name="Total Weight",
+        name="總重量",
         device_class=SensorDeviceClass.WEIGHT,
         native_unit_of_measurement=UnitOfMass.GRAMS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1689,7 +1716,7 @@ WEIGHT_PLATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=WEIGHT_PLATE_RESTORE_WEIGHT,
-        name="Restore Weight",
+        name="還原重量",
         device_class=SensorDeviceClass.WEIGHT,
         native_unit_of_measurement=UnitOfMass.GRAMS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -1697,7 +1724,7 @@ WEIGHT_PLATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=WEIGHT_PLATE_LOW_BATTERY,
-        name="Low Battery",
+        name="低電量",
         icon="mdi:battery-alert"
     )
 )
@@ -1707,6 +1734,7 @@ class PanasonicSwitchDescription(
     SwitchEntityDescription
 ):
     """Class to describe an Panasonic switch."""
+    reverse_state: bool = False
 
 
 AIRPURIFIER_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
@@ -1718,31 +1746,19 @@ AIRPURIFIER_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
     ),
     PanasonicSwitchDescription(
         key=AIRPURIFIER_BUZZER,
-        name="Buzzer",
+        name="蜂鳴器",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:volume-high'
     ),
     PanasonicSwitchDescription(
         key=AIRPURIFIER_PET_MODE,
-        name="Pet Mode",
+        name="寵物模式",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:paw'
     )
 )
 
 CLIMATE_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
-    PanasonicSwitchDescription(
-        key=CLIMATE_MONITOR_MILDEW,
-        name="Mildew Monitor",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:mushroom'
-    ),
-    PanasonicSwitchDescription(
-        key=CLIMATE_VOICE,
-        name="Voice Control",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:account-voice'
-    ),
     PanasonicSwitchDescription(
         key=CLIMATE_AIRFRESH_MODE,
         name=" nanoe™ X",
@@ -1751,28 +1767,35 @@ CLIMATE_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
     ),
     PanasonicSwitchDescription(
         key=CLIMATE_ANTI_MILDEW,
-        name="Anti Mildew",
+        name="乾燥防霉",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:weather-dust'
     ),
     PanasonicSwitchDescription(
         key=CLIMATE_AUTO_CLEAN,
-        name="Auto Clean",
+        name="自體淨",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:broom'
     ),
     PanasonicSwitchDescription(
         key=CLIMATE_BUZZER,
-        name="Buzzer",
+        name="操作提示音",
         device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:volume-source'
+        icon='mdi:volume-source',
+        reverse_state=True
     ),
     PanasonicSwitchDescription(
         key=CLIMATE_MONITOR_MILDEW,
-        name="Mildew Monitor",
+        name="防霉監控",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:mushroom'
-    )
+    ),
+    PanasonicSwitchDescription(
+        key=CLIMATE_VOICE,
+        name="聲控開關",
+        device_class=SwitchDeviceClass.SWITCH,
+        icon='mdi:account-voice'
+    )    
 )
 
 DEHUMIDIFIER_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
@@ -1784,7 +1807,7 @@ DEHUMIDIFIER_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
     ),
     PanasonicSwitchDescription(
         key=DEHUMIDIFIER_BUZZER,
-        name="Buzzer",
+        name="蜂鳴器",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:volume-high'
     )
@@ -1835,13 +1858,13 @@ FRIDGE_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
     ),
     PanasonicSwitchDescription(
         key=FRIDGE_SHOPPING_MODE,
-        name="Shopping Mode",
+        name="採買模式",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:shopping'
     ),
     PanasonicSwitchDescription(
         key=FRIDGE_GO_OUT_MODE,
-        name="Go Out Mode",
+        name="外出模式",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:logout'
     )
@@ -1872,13 +1895,13 @@ LIGHT_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
 WASHING_MACHINE_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
     PanasonicSwitchDescription(
         key=WASHING_MACHINE_ENABLE,
-        name="Pause/Start",
+        name="暫停／開始",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:play-pause'
     ),
     PanasonicSwitchDescription(
         key=WASHING_MACHINE_WARM_WATER,
-        name="Warm Water",
+        name="溫水",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:heat-wave'
     )

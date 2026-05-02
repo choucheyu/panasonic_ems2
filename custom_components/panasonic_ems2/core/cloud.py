@@ -30,12 +30,9 @@ from .const import (
     COMMANDS_TYPE,
     EXTRA_COMMANDS,
     EXCESS_COMMANDS,
+    SUPPLEMENTAL_COMMANDS,
     MODEL_JP_TYPES,
     CLIMATE_PM25,
-    CLIMATE_MONITOR_MILDEW,
-    CLIMATE_IMMEDIATE_MILDEW_DRY,
-    CLIMATE_HUMIDITY_INDOOR,
-    CLIMATE_VOICE,
     DEVICE_TYPE_CLIMATE,
     DEVICE_TYPE_DEHUMIDIFIER,
     DEVICE_TYPE_FRIDGE,
@@ -429,19 +426,11 @@ class PanasonicSmartHome(object):
             self._devices_info[gwid]["Information"] = info
         return info
 
-    def _get_vx_supplemental_keys(self, device: dict) -> list:
-        """Return VX-only supplemental keys fetched via isolated snapshots."""
-        if str(device.get("DeviceType", "")) != str(DEVICE_TYPE_CLIMATE):
-            return []
-        if device.get("ModelType", "") != "VX":
-            return []
-        return [
-            CLIMATE_PM25,
-            CLIMATE_MONITOR_MILDEW,
-            CLIMATE_IMMEDIATE_MILDEW_DRY,
-            CLIMATE_HUMIDITY_INDOOR,
-            CLIMATE_VOICE,
-        ]
+    def _get_supplemental_keys(self, device: dict) -> list:
+        """Return isolated supplemental command keys for this device/model."""
+        device_type = str(device.get("DeviceType", ""))
+        model_type = device.get("ModelType", "")
+        return SUPPLEMENTAL_COMMANDS.get(device_type, {}).get(model_type, [])
 
     @api_status
     async def _fetch_device_command_snapshot(self, device: dict, device_id, keys: list) -> dict:
@@ -838,7 +827,7 @@ class PanasonicSmartHome(object):
             await asyncio.sleep(.1)
             await self.get_device_with_info(device, command_types)
 
-            supp_keys = self._get_vx_supplemental_keys(device)
+            supp_keys = self._get_supplemental_keys(device)
             if supp_keys and "Information" in self._devices_info.get(gwid, {}):
                 supplemental_by_device_id = {}
                 for dev in device.get("Devices", []):
@@ -874,6 +863,26 @@ class PanasonicSmartHome(object):
             device["Model"]
         )
         await self.get_device_with_info(device, command_types)
+
+        supp_keys = self._get_supplemental_keys(device)
+        info_list = self._devices_info.get(gwid, {}).get("Information", [])
+        if not supp_keys or not info_list:
+            return
+
+        supplemental_by_device_id = {}
+        target_ids = {device_id}
+        for dev in device.get("Devices", []):
+            if dev.get("DeviceID") in target_ids:
+                await asyncio.sleep(.1)
+                snapshot = await self._fetch_device_command_snapshot(device, dev.get("DeviceID"), supp_keys)
+                if snapshot:
+                    supplemental_by_device_id[dev.get("DeviceID")] = snapshot
+
+        if supplemental_by_device_id:
+            self._devices_info[gwid]["Information"] = self._merge_supplemental_status(
+                self._devices_info[gwid]["Information"],
+                supplemental_by_device_id,
+            )
 
     @api_status
     async def set_device(self, gwid: str, device_id, func: str, value):

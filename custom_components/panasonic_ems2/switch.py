@@ -70,6 +70,16 @@ class PanasonicSwitch(PanasonicBaseEntity, SwitchEntity):
     """Implementation of a Panasonic switch."""
     entity_description: PanasonicSwitchDescription
 
+    def _raw_value_to_is_on(self, value: int) -> bool:
+        if self.entity_description.reverse_state:
+            return int(value) == 0
+        return bool(int(value))
+
+    def _is_on_to_raw_value(self, is_on: bool) -> int:
+        if self.entity_description.reverse_state:
+            return 0 if is_on else 1
+        return 1 if is_on else 0
+
     def __init__(
         self,
         coordinator,
@@ -137,12 +147,12 @@ class PanasonicSwitch(PanasonicBaseEntity, SwitchEntity):
         state = status.get(self.entity_description.key)
         if not isinstance(state, int):
             return STATE_UNAVAILABLE
-        return bool(int(status.get(self.entity_description.key, 0)))
+        return self._raw_value_to_is_on(int(status.get(self.entity_description.key, 0)))
 
     async def async_turn_on(self) -> None:
         gwid = self.device_gwid
         device_id = self.device_id
-        await self.client.set_device(gwid, device_id, self.entity_description.key, 1)
+        await self.client.set_device(gwid, device_id, self.entity_description.key, self._is_on_to_raw_value(True))
         await asyncio.sleep(1)
         await self.client.update_device(gwid, device_id)
         self.async_write_ha_state()
@@ -150,7 +160,7 @@ class PanasonicSwitch(PanasonicBaseEntity, SwitchEntity):
     async def async_turn_off(self) -> None:
         gwid = self.device_gwid
         device_id = self.device_id
-        await self.client.set_device(gwid, device_id, self.entity_description.key, 0)
+        await self.client.set_device(gwid, device_id, self.entity_description.key, self._is_on_to_raw_value(False))
         await asyncio.sleep(1)
         await self.client.update_device(gwid, device_id)
         self.async_write_ha_state()
