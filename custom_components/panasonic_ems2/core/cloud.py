@@ -32,6 +32,11 @@ from .const import (
     EXCESS_COMMANDS,
     MODEL_JP_TYPES,
     CLIMATE_PM25,
+    CLIMATE_MONITOR_MILDEW,
+    CLIMATE_IMMEDIATE_MILDEW_DRY,
+    CLIMATE_HUMIDITY_INDOOR,
+    CLIMATE_VOICE,
+    DEVICE_TYPE_CLIMATE,
     DEVICE_TYPE_DEHUMIDIFIER,
     DEVICE_TYPE_FRIDGE,
     DEVICE_TYPE_LIGHT,
@@ -328,7 +333,7 @@ class PanasonicSmartHome(object):
         """
         try:
             new = int(status)
-            if ("RX" in model_type and
+            if (model_type in ["VX"] and
                     command_type == CLIMATE_PM25 and
                     int(status) == 65535
                 ):
@@ -423,6 +428,56 @@ class PanasonicSmartHome(object):
         if len(info) >= 1:
             self._devices_info[gwid]["Information"] = info
         return info
+
+    def _get_vx_supplemental_keys(self, device: dict) -> list:
+        """Return VX-only supplemental keys fetched via isolated snapshots."""
+        if str(device.get("DeviceType", "")) != str(DEVICE_TYPE_CLIMATE):
+            return []
+        if device.get("ModelType", "") != "VX":
+            return []
+        return [
+            CLIMATE_PM25,
+            CLIMATE_MONITOR_MILDEW,
+            CLIMATE_IMMEDIATE_MILDEW_DRY,
+            CLIMATE_HUMIDITY_INDOOR,
+            CLIMATE_VOICE,
+        ]
+
+    @api_status
+    async def _fetch_device_command_snapshot(self, device: dict, device_id, keys: list) -> dict:
+        if not keys:
+            return {}
+        gwid = device.get("GWID")
+        if not gwid:
+            return {}
+        header = {"CPToken": self._cp_token, "auth": device.get("Auth", ""), "GWID": gwid}
+        data = [{"DeviceID": device_id, "CommandTypes": [{"CommandType": k} for k in keys]}]
+        response = await self.request(method="POST", headers=header, data=data, endpoint=apis.post_device_get_info())
+        snapshot = {}
+        if response.get("status", "") != "success":
+            return snapshot
+        model_type = device.get("ModelType", "")
+        for dev in response.get("devices", []):
+            if dev.get("DeviceID") != device_id:
+                continue
+            for info in dev.get("Info", []):
+                cmd_type, status = self._workaround_info(model_type, info.get("CommandType"), info.get("status"))
+                if cmd_type in keys:
+                    snapshot[cmd_type] = status
+        return snapshot
+
+    def _merge_supplemental_status(self, info_list: list, supplemental_by_device_id: dict) -> list:
+        if not info_list or not supplemental_by_device_id:
+            return info_list
+        for device_info in info_list:
+            device_id = device_info.get("DeviceID")
+            extras = supplemental_by_device_id.get(device_id)
+            if not extras:
+                continue
+            status = device_info.setdefault("status", {})
+            for key, value in extras.items():
+                status[key] = value
+        return info_list
 
     def _get_commands(self, device_type, model_type, model):
         """
@@ -782,6 +837,23 @@ class PanasonicSmartHome(object):
             )
             await asyncio.sleep(.1)
             await self.get_device_with_info(device, command_types)
+
+            supp_keys = self._get_vx_supplemental_keys(device)
+            if supp_keys and "Information" in self._devices_info.get(gwid, {}):
+                supplemental_by_device_id = {}
+                for dev in device.get("Devices", []):
+                    if not dev:
+                        continue
+                    device_id = dev.get("DeviceID", 1)
+                    await asyncio.sleep(.1)
+                    snap = await self._fetch_device_command_snapshot(device, device_id, supp_keys)
+                    if snap:
+                        supplemental_by_device_id[device_id] = snap
+                if supplemental_by_device_id:
+                    self._merge_supplemental_status(
+                        self._devices_info[gwid]["Information"],
+                        supplemental_by_device_id,
+                    )
         await self.get_user_info()
         await self.get_update_info(get_update_info)
 
