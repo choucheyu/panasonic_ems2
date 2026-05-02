@@ -31,6 +31,7 @@ from .const import (
     EXTRA_COMMANDS,
     EXCESS_COMMANDS,
     SUPPLEMENTAL_COMMANDS,
+    CLIMATE_RANGE_FAMILY,
     MODEL_JP_TYPES,
     CLIMATE_PM25,
     DEVICE_TYPE_CLIMATE,
@@ -947,15 +948,28 @@ class PanasonicSmartHome(object):
 
         model_type = self._devices_info[device_gwid]["ModelType"]
         device_type = self._devices_info[device_gwid]["DeviceType"]
-        if model_type not in self._commands_info:
-            return rng
-        cmds_list = self._commands_info[model_type]
-        for cmds in cmds_list:
-            if device_type == cmds["DeviceType"]:
+
+        candidates = [model_type]
+        alias = CLIMATE_RANGE_FAMILY.get(model_type, {}).get(command)
+        if alias and alias != model_type:
+            candidates.append(alias)
+
+        for candidate in candidates:
+            if candidate not in self._commands_info:
+                continue
+            cmds_list = self._commands_info[candidate]
+            for cmds in cmds_list:
+                if device_type != cmds["DeviceType"]:
+                    continue
                 cmd_para = cmds.get("CommandParameters", None)
-                if cmd_para:
-                    rng = cmd_para.get(command, {})
-                    break
+                if not cmd_para:
+                    continue
+                found = cmd_para.get(command, {})
+                if found:
+                    return found
+                if not rng:
+                    rng = found
+                break
 
         return rng
 

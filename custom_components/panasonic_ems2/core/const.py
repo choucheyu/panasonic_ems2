@@ -269,6 +269,17 @@ CLIMATE_PM25_MODELS = [
     "EHW", "GHW", "JHW", "JHV2" ,"VX"
 ]
 
+# Declarative range-family alias for climate option/range lookups.
+# When a model_type's metadata lacks a non-empty parameters dict for a given
+# command, get_range() falls back to the declared alias model_type. Future
+# models can join the same family by adding entries here only.
+CLIMATE_RANGE_FAMILY = {
+    "VX": {
+        CLIMATE_OPERATING_MODE: "PXGD",
+        CLIMATE_FAN_SPEED: "PXGD",
+    },
+}
+
 DEHUMIDIFIER_POWER = "0x00"
 DEHUMIDIFIER_MODE = "0x01"
 DEHUMIDIFIER_TIMER_OFF = "0x02"
