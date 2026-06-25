@@ -12,6 +12,8 @@ from .core.const import (
     DATA_CLIENT,
     DATA_COORDINATOR,
     SAA_NUMBERS,
+    CLIMATE_TIMER_ON,
+    CLIMATE_TIMER_OFF,
     PanasonicNumberDescription
 )
 SCAN_INTERVAL = timedelta(seconds=60)
@@ -112,6 +114,11 @@ class PanasonicNumber(PanasonicBaseEntity, NumberEntity):
         status = self.get_status(self.coordinator.data)
         if status:
             value = float(status[self.entity_description.key])
+            if (
+                self.entity_description.key in (CLIMATE_TIMER_ON, CLIMATE_TIMER_OFF)
+                and value == 65535
+            ):
+                return 0
             return value
         return None
 

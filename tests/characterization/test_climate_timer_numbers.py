@@ -117,18 +117,38 @@ def test_climate_timer_numbers_are_minutes_with_inactive_sentinel_outside_ha_ran
     assert 65535 > by_key[timer_off]["native_max_value"]
 
 
-def test_native_value_currently_exposes_panasonic_65535_timer_sentinel() -> None:
+def test_native_value_normalizes_panasonic_65535_timer_sentinel_to_zero_for_ui() -> None:
+    const = _constants()
     native_value = load_method_function(
         NUMBER,
         class_name="PanasonicNumber",
         method_name="native_value",
-        globals_env={},
+        globals_env={
+            "CLIMATE_TIMER_ON": const["CLIMATE_TIMER_ON"],
+            "CLIMATE_TIMER_OFF": const["CLIMATE_TIMER_OFF"],
+        },
     )
+
+    for key in (const["CLIMATE_TIMER_ON"], const["CLIMATE_TIMER_OFF"]):
+        number = _NumberEntity(key=key, raw_value=65535)
+        assert native_value(number) == 0.0
+
+
+def test_native_value_keeps_active_timer_countdown_minutes() -> None:
     const = _constants()
+    native_value = load_method_function(
+        NUMBER,
+        class_name="PanasonicNumber",
+        method_name="native_value",
+        globals_env={
+            "CLIMATE_TIMER_ON": const["CLIMATE_TIMER_ON"],
+            "CLIMATE_TIMER_OFF": const["CLIMATE_TIMER_OFF"],
+        },
+    )
 
-    number = _NumberEntity(key=const["CLIMATE_TIMER_ON"], raw_value=65535)
+    number = _NumberEntity(key=const["CLIMATE_TIMER_OFF"], raw_value=10)
 
-    assert native_value(number) == 65535.0
+    assert native_value(number) == 10.0
 
 
 def test_setting_timer_number_sends_requested_integer_value_then_refreshes_device() -> None:
