@@ -72,7 +72,7 @@ def test_vx_supplemental_snapshot_reads_only_requested_keys_and_normalizes_pm25(
 
     assert snapshot == fixture["expected_snapshot"]
     assert constants["CLIMATE_PM25"] in snapshot
-    assert snapshot[constants["CLIMATE_PM25"]] == -1
+    assert snapshot[constants["CLIMATE_PM25"]] == 0
     assert "0x99" not in snapshot
     assert len(client.requests) == 1
     request = client.requests[0]
@@ -116,7 +116,7 @@ def test_merge_supplemental_status_adds_extras_without_removing_normal_status() 
     assert status["0x00"] == 0
     assert status["0x01"] == 1
     assert status["0x02"] == 0
-    assert status["0x37"] == -1
+    assert status["0x37"] == 0
     assert status["0x53"] == 1
     assert status["0x55"] == 0
     assert status["0x57"] == 55

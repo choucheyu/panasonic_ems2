@@ -29,28 +29,18 @@ def _load_workaround() -> tuple[dict[str, Any], Callable[..., tuple[str, Any]]]:
     return constants, method
 
 
-def test_vx_and_ux_pm25_invalid_value_is_normalized_to_minus_one() -> None:
+def test_climate_pm25_invalid_raw_65535_is_normalized_to_zero_for_all_families() -> None:
     constants, workaround = _load_workaround()
     pm25 = constants["CLIMATE_PM25"]
 
-    for model_type in ("VX", "UX"):
+    for model_type in ("VX", "UX", "PXGD", "UJ", "UK", "uk"):
         command_type, value = workaround(None, model_type, pm25, 65535)
         assert command_type == pm25
-        assert value == -1
+        assert value == 0
 
         command_type, value = workaround(None, model_type, pm25, "65535")
         assert command_type == pm25
-        assert value == -1
-
-
-def test_pm25_invalid_value_is_not_applied_to_unverified_climate_families() -> None:
-    constants, workaround = _load_workaround()
-    pm25 = constants["CLIMATE_PM25"]
-
-    for model_type in ("PXGD", "UJ", "UK", "uk"):
-        command_type, value = workaround(None, model_type, pm25, 65535)
-        assert command_type == pm25
-        assert value == 65535
+        assert value == 0
 
 
 def test_pm25_normal_values_are_left_as_integers_for_vx_and_ux() -> None:
@@ -92,14 +82,14 @@ def test_xgs_fridge_temperature_values_use_existing_minus_255_adjustment() -> No
         assert value == 5
 
 
-def test_dehumidifier_pm25_invalid_value_is_normalized_for_existing_families() -> None:
+def test_dehumidifier_pm25_invalid_raw_65535_is_normalized_to_zero() -> None:
     constants, workaround = _load_workaround()
     pm25 = constants["DEHUMIDIFIER_PM25"]
 
     for model_type in ("GXW", "JHW"):
         command_type, value = workaround(None, model_type, pm25, 65535)
         assert command_type == pm25
-        assert value == -1
+        assert value == 0
 
 
 def test_unparseable_status_falls_back_to_original_value() -> None:

@@ -331,11 +331,10 @@ class PanasonicSmartHome(object):
         """
         try:
             new = int(status)
-            if (model_type in ["VX", "UX"] and
-                    command_type == CLIMATE_PM25 and
+            if (command_type in [CLIMATE_PM25, DEHUMIDIFIER_PM25] and
                     int(status) == 65535
                 ):
-                new = -1
+                new = 0
             elif (model_type in ["HDH", "KBS", "LMS", "LM", "DDH", "MDH", "DW", "LX128B"] and
                     command_type == WASHING_MACHINE_TIMER_REMAINING_TIME
                 ):
@@ -348,11 +347,6 @@ class PanasonicSmartHome(object):
                     ]
                 ):
                 new = int(status) - 255
-            elif ((model_type in ["GXW", "JHW"]) and
-                    command_type == DEHUMIDIFIER_PM25 and
-                    int(status) == 65535
-                ):
-                new = -1
         except:
             new = status
         return command_type, new
