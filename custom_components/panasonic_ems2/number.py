@@ -114,11 +114,10 @@ class PanasonicNumber(PanasonicBaseEntity, NumberEntity):
         status = self.get_status(self.coordinator.data)
         if status:
             value = float(status[self.entity_description.key])
-            if (
-                self.entity_description.key in (CLIMATE_TIMER_ON, CLIMATE_TIMER_OFF)
-                and value == 65535
-            ):
-                return 0
+            if self.entity_description.key in (CLIMATE_TIMER_ON, CLIMATE_TIMER_OFF):
+                if value == 65535:
+                    return 0
+                return int(value)
             return value
         return None
 

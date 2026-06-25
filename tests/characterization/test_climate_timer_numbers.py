@@ -134,7 +134,7 @@ def test_native_value_normalizes_panasonic_65535_timer_sentinel_to_zero_for_ui()
         assert native_value(number) == 0.0
 
 
-def test_native_value_keeps_active_timer_countdown_minutes() -> None:
+def test_native_value_returns_timer_countdown_minutes_as_int_for_clean_ui() -> None:
     const = _constants()
     native_value = load_method_function(
         NUMBER,
@@ -146,9 +146,11 @@ def test_native_value_keeps_active_timer_countdown_minutes() -> None:
         },
     )
 
-    number = _NumberEntity(key=const["CLIMATE_TIMER_OFF"], raw_value=10)
-
-    assert native_value(number) == 10.0
+    for raw_value, expected in [(0, 0), ("3", 3), (10, 10)]:
+        number = _NumberEntity(key=const["CLIMATE_TIMER_OFF"], raw_value=raw_value)
+        value = native_value(number)
+        assert value == expected
+        assert type(value) is int
 
 
 def test_setting_timer_number_sends_requested_integer_value_then_refreshes_device() -> None:
