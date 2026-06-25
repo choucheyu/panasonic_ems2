@@ -1,64 +1,107 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg?style=for-the-badge)](https://github.com/hacs/integration)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/tsunglung/panasonic_ems2?style=for-the-badge)
-[![GitHub license](https://img.shields.io/github/license/tsunglung/panasonic_ems2?style=for-the-badge)](https://github.com/osk2/panasonic_smart_app/blob/master/LICENSE)
-
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://hacs.xyz/)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/choucheyu/panasonic_ems2?style=for-the-badge)
+[![GitHub license](https://img.shields.io/github/license/choucheyu/panasonic_ems2?style=for-the-badge)](LICENSE)
 
 [繁體中文](README_zh-tw.md) | [English](README.md)
 
-# Panasonic IoT TW
+# Panasonic Smart IoT TW for Home Assistant
 
-Home Assistant integration for Panasonic IoT TW [Android](https://play.google.com/store/apps/details?id=com.panasonic.smart&hl=zh_TW&gl=US&pli=1) [iOS](https://apps.apple.com/tw/app/panasonic-iot-tw/id904484053).
+A Home Assistant custom integration for Panasonic IoT TW / Panasonic Smart Home appliances.
 
-This integration allows you to control your Panasonic IoT appliances.
+This is a Taiwan-focused maintained fork of [`tsunglung/panasonic_ems2`](https://github.com/tsunglung/panasonic_ems2), which was originally based on [`osk2/panasonic_smart_app`](https://github.com/osk2/panasonic_smart_app). The original Apache-2.0 license is preserved.
 
-This project is forked from [Osk2's](https://github.com/osk2) [panasonic_smart_app](https://github.com/osk2/panasonic_smart_appp).
-<a href="https://www.buymeacoffee.com/osk2" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 20px !important;width: 70px !important;" ></a>
+## What is different in this fork
 
-## Note
+This fork keeps the original integration goal, but carries additional fixes and device support validated against Taiwan Panasonic Smart Home usage:
 
-1. This integration only support the latest version of Panasonic IoT module, please use the latest version of IoT module.
-2. The code was refacotred, currently support Climate, Washing Machine, Fridge, Dehumidifier，ERV and Weight Plate.
-3. The Panasonic IoT appliances have a lot of models, so some appliances may support well. Welcome to report the issue to me to fix it.
+- Additional VX-series climate support and supplemental cloud status reads.
+- Range fallback for climate operating mode and fan-speed options when model metadata is incomplete.
+- Additional climate entities such as mildew-related controls/status, indoor humidity, voice, PM2.5, and fan-speed options where supported by the device/cloud metadata.
+- Raw-value handling fixes for switch entities.
+- Traditional Chinese wording and Home Assistant UI text updates.
 
-# Installation
+> Device capability still depends on the exact appliance model and the command metadata returned by Panasonic's cloud API.
 
-You can install component with [HACS](https://hacs.xyz/) custom repo: HACS > Integrations > 3 dots (upper top corner) > Custom repositories > URL: `tsunglung/panasonic_ems2` > Category: Integration
+## Supported appliance categories
+
+The integration currently targets Panasonic Smart Home / Panasonic IoT TW devices exposed by the cloud API, including:
+
+- Climate / air conditioner
+- Washing machine
+- Fridge
+- Dehumidifier
+- ERV / ventilator
+- Weight plate
+
+Some models expose incomplete or model-specific command metadata. Please open an issue in this repository with model and command information when a device or entity is missing or behaves incorrectly.
+
+## Installation
+
+### HACS custom repository
+
+1. Open HACS in Home Assistant.
+2. Go to **Integrations**.
+3. Open the menu in the upper-right corner and choose **Custom repositories**.
+4. Add this repository:
+
+   ```text
+   https://github.com/choucheyu/panasonic_ems2
+   ```
+
+5. Category: **Integration**.
+6. Install **Panasonic Smart IoT TW**.
+7. Restart Home Assistant.
+
+### Manual installation
+
+Copy the following folder from this repository:
+
+```text
+custom_components/panasonic_ems2
+```
+
+into your Home Assistant config folder:
+
+```text
+<config>/custom_components/panasonic_ems2
+```
 
 Then restart Home Assistant.
 
-### Manually Installation
+## Configuration
 
-Copy `panasonic_ems2` folder of custom_components in this repository to `custom_components` folder in your config folder.
+Use Home Assistant's config flow:
 
-# Configuration
+1. Go to **Settings > Devices & services > Add integration**.
+2. Search for **Panasonic Smart IoT TW**.
+3. Enter your Panasonic Smart Home / Panasonic IoT TW account credentials.
+4. Finish setup and let Home Assistant discover your appliances.
 
-**Please use the config flow of Home Assistant**
+## Help add or fix device support
 
-1. With GUI. Configuration > Integration > Add Integration > `Panasonic Smart IoT`
-   1. If the integration didn't show up in the list please REFRESH the page
-   2. If the integration is still not in the list, you need to clear the browser cache.
-2. Enter the Login info (email and password of [Panasonic Cloud](https://club.panasonic.tw/))
-3. Enjoy
+If your appliance is missing, has incomplete entities, or behaves incorrectly, please collect the device model and command metadata.
 
-# Help to add your Panasonic IoT appliances in this integration
+1. Install Python 3.
+2. Download the helper script from this repository:
 
-If you do not see any device or entity is not normal after add this integration, your appliances may not corretly supported by this integration.
-You can help to improve this integration via send the information of your appliances to me to debug.
+   ```text
+   https://github.com/choucheyu/panasonic_ems2/raw/master/scripts/panasonic_ems2.py
+   ```
 
-**Method**
+3. Run it from a terminal:
 
-1. Download and install [Python](https://www.python.org/downloads/)
-2. Download the script [panasonic_ems2.py](https://github.com/tsunglung/panasonic_ems2/raw/master/scripts/panasonic_ems2.py) to your PC or MacOS
-3. Find the downloaded script, use CMD of Windows or Terminal of MacOS, "cd [your Download Path]"
-4. Run the following command and login your Panasonic Cloud Account.
-```
-pip install request
-python panasonic_ems2.py
-```
-5. There are two files generated. You can find the model info in "panasonic_devices.json" then send the model info and the "panasonic_commands.json" to me or crate a issue.
+   ```bash
+   pip install requests
+   python panasonic_ems2.py
+   ```
 
-Buy Me A Coffee
+4. The script generates device/command JSON files. Open an issue in this repository and attach the relevant model and command information. Remove account tokens or personal information before sharing.
 
-|  LINE Pay | LINE Bank | JKao Pay |
-| :------------: | :------------: | :------------: |
-| <img src="https://github.com/tsunglung/TwANWS/blob/master/linepay.jpg" alt="Line Pay" height="200" width="200">  | <img src="https://github.com/tsunglung/TwANWS/blob/master/linebank.jpg" alt="Line Bank" height="200" width="200">  | <img src="https://github.com/tsunglung/TwANWS/blob/master/jkopay.jpg" alt="JKo Pay" height="200" width="200">  |
+## Attribution
+
+This project is based on:
+
+- [`tsunglung/panasonic_ems2`](https://github.com/tsunglung/panasonic_ems2)
+- [`osk2/panasonic_smart_app`](https://github.com/osk2/panasonic_smart_app)
+
+Thanks to the original authors and contributors. This fork is maintained separately for Taiwan-focused Home Assistant usage and additional model support.

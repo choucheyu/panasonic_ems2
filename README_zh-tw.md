@@ -1,60 +1,107 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg?style=for-the-badge)](https://github.com/hacs/integration)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/tsunglung/panasonic_ems2?style=for-the-badge)
-[![GitHub license](https://img.shields.io/github/license/tsunglung/panasonic_ems2?style=for-the-badge)](https://github.com/osk2/panasonic_smart_app/blob/master/LICENSE)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://hacs.xyz/)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/choucheyu/panasonic_ems2?style=for-the-badge)
+[![GitHub license](https://img.shields.io/github/license/choucheyu/panasonic_ems2?style=for-the-badge)](LICENSE)
 
 [English](README.md) | [繁體中文](README_zh-tw.md)
 
-# Panasonic IoT TW
+# Panasonic Smart IoT TW for Home Assistant
 
-Home Assistant 的 Panasonic IoT TW [Android](https://play.google.com/store/apps/details?id=com.panasonic.smart&hl=zh_TW&gl=US&pli=1) [iOS](https://apps.apple.com/tw/app/panasonic-iot-tw/id904484053) 整合套件
+這是給 Home Assistant 使用的 Panasonic IoT TW / Panasonic Smart Home 自訂整合。
 
-本專案修改自  [Osk2's](https://github.com/osk2) [panasonic_smart_app](https://github.com/osk2/panasonic_smart_appp)。
-<a href="https://www.buymeacoffee.com/osk2" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 20px !important;width: 70px !important;" ></a>
+本專案是 [`tsunglung/panasonic_ems2`](https://github.com/tsunglung/panasonic_ems2) 的台灣使用情境維護版；原專案則源自 [`osk2/panasonic_smart_app`](https://github.com/osk2/panasonic_smart_app)。本 fork 保留原始 Apache-2.0 授權與來源標示。
 
-## 注意
+## 這個 fork 有哪些不同
 
-1. 本整合套件僅支援 Panasonic IoT 模組最新版本，請更新 Panasonic IoT 模組的韌體到最新版本。
-2. 這套件全新改寫，歡迎回報。目前已支援空調，洗衣機，冰箱，除溼機，全熱交換機和重量感知板。
-3. 由於 Panasonic IoT 家電有很多型號，每個型號功能都不一樣，如果遇到問題，歡迎回報問題給我修復問題。
+這個 fork 保留原本整合 Panasonic 雲端家電的目標，但加入了針對台灣 Panasonic Smart Home 使用情境實測後的修正與補強：
 
-# 安裝
+- 補強 VX 系列空調支援與 supplemental cloud status 讀取。
+- 當 Panasonic cloud 回傳的機型 metadata 不完整時，補上空調運轉模式與風量選項的 range fallback。
+- 依裝置/cloud metadata 支援狀況，補上防霉相關控制/狀態、室內濕度、語音、PM2.5、風量等實體。
+- 修正 switch entity 的 raw value 轉換。
+- 調整繁體中文與 Home Assistant UI 顯示文字。
 
-你可以用 [HACS](https://hacs.xyz/) 來安裝這個整合。 步驟如下 custom repo: HACS > Integrations > 3 dots (upper top corner) > Custom repositories > URL: `tsunglung/panasonic_ems2` > Category: Integration
+> 實際可用功能仍取決於你的家電型號，以及 Panasonic 雲端 API 對該型號回傳的 command metadata。
 
-# 手動安裝
+## 目前目標支援類別
 
-手動複製 `panasonic_ems2` 資料夾到你的 config 資料夾的  `custom_components` 目錄下。
+本整合目前針對 Panasonic Smart Home / Panasonic IoT TW 雲端 API 暴露的裝置，包含：
 
-然後重新啟動 Home Assistant.
+- 空調
+- 洗衣機
+- 冰箱
+- 除濕機
+- 全熱交換器 / 換氣設備
+- 重量感知板
 
-# 設定
+Panasonic 家電型號很多，不同型號的 command metadata 可能不同。如果你的裝置缺少實體、功能不完整或行為異常，請在本 repo 開 issue 並提供型號與 command 資訊。
 
-**請使用 Home Assistant 整合設定**
+## 安裝
 
-1. 從 GUI. 設定 > 整合 > 新增 整合 > Panasonic Smart IoT
-   1. 如果 `Panasonic Smart IoT` 沒有出現在清單裡，請 重新整理 (REFRESH) 網頁。
-   2. 如果 `Panasonic Smart IoT` 還是沒有出現在清單裡，請清除瀏覽器的快取 (Cache)。
-2. 輸入登入資訊 ([Panasonic Cloud](https://club.panasonic.tw/) 的電子郵件及密碼)
-3. 開始使用。
+### HACS custom repository
 
-# 協助加入你的 國際版 IoT 智慧家電到 這個自訂整合
+1. 打開 Home Assistant 的 HACS。
+2. 進入 **Integrations**。
+3. 點右上角選單，選擇 **Custom repositories**。
+4. 加入這個 repository：
 
-如果，你發現你加入整合後，你的智慧家電在 HA 沒有出現或是有實體不正常。很有可能你的國際版 IoT 智慧家電還沒有被支援完整。
-你可以協助改善這整合，只要簡單幾個步驟把你的國際版 IoT 智慧家電 家電資訊寄給我除錯。
+   ```text
+   https://github.com/choucheyu/panasonic_ems2
+   ```
 
-**方法**
+5. Category 選 **Integration**。
+6. 安裝 **Panasonic Smart IoT TW**。
+7. 重新啟動 Home Assistant。
 
-1. 下載並安裝 [Python](https://www.python.org/downloads/)
-2. 下載腳本 [panasonic_ems2.py](https://github.com/tsunglung/panasonic_ems2/raw/master/scripts/panasonic_ems2.py) 到你的 Windows 或 MacOS
-3. 找到下載的腳本, 並使用 Windows 的 CMD 或是  macOS 的 Terminal, 切換目錄到下載的路徑 "cd [your Download Path]"
-4. 執行下載的指令並登入你的 Panasonic Cloud 帳號
+### 手動安裝
+
+將本 repo 的這個資料夾：
+
+```text
+custom_components/panasonic_ems2
 ```
-python panasonic_ems2.py
+
+複製到 Home Assistant config 目錄底下：
+
+```text
+<config>/custom_components/panasonic_ems2
 ```
-5. 如果登入成功，會有二個檔案產生. 你可以在  "panasonic_devices.json" 找到家電型號資訊，接著把型號資訊以及 "panasonic_commands.json" 提供給我 或是發到 issue.
 
-打賞
+然後重新啟動 Home Assistant。
 
-|  LINE Pay | LINE Bank | JKao Pay |
-| :------------: | :------------: | :------------: |
-| <img src="https://github.com/tsunglung/TwANWS/blob/master/linepay.jpg" alt="Line Pay" height="200" width="200">  | <img src="https://github.com/tsunglung/TwANWS/blob/master/linebank.jpg" alt="Line Bank" height="200" width="200">  | <img src="https://github.com/tsunglung/TwANWS/blob/master/jkopay.jpg" alt="JKo Pay" height="200" width="200">  |
+## 設定
+
+請使用 Home Assistant 的 config flow：
+
+1. 前往 **設定 > 裝置與服務 > 新增整合**。
+2. 搜尋 **Panasonic Smart IoT TW**。
+3. 輸入 Panasonic Smart Home / Panasonic IoT TW 帳號密碼。
+4. 完成設定，等待 Home Assistant 載入家電。
+
+## 協助新增或修正裝置支援
+
+如果你的家電沒有出現、實體不完整，或控制行為異常，請先收集該裝置的型號與 command metadata。
+
+1. 安裝 Python 3。
+2. 下載本 repo 的輔助腳本：
+
+   ```text
+   https://github.com/choucheyu/panasonic_ems2/raw/master/scripts/panasonic_ems2.py
+   ```
+
+3. 在終端機執行：
+
+   ```bash
+   pip install requests
+   python panasonic_ems2.py
+   ```
+
+4. 腳本會產生 device / command JSON 檔。請在本 repo 開 issue，附上相關型號與 command 資訊。分享前請先移除 token、帳號或個人資料。
+
+## 來源標示
+
+本專案基於：
+
+- [`tsunglung/panasonic_ems2`](https://github.com/tsunglung/panasonic_ems2)
+- [`osk2/panasonic_smart_app`](https://github.com/osk2/panasonic_smart_app)
+
+感謝原作者與貢獻者。本 fork 會以台灣 Home Assistant 使用情境與額外機型支援為主，獨立維護。

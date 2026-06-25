@@ -1,8 +1,8 @@
 {
   "domain": "panasonic_ems2",
-  "name": "Panasonic Smart IoT",
+  "name": "Panasonic Smart IoT TW",
   "config_flow": true,
-  "version": "0.0.1",
+  "version": "0.1.0",
   "iot_class": "cloud_polling",
   "documentation": "https://github.com/choucheyu/panasonic_ems2",
   "issue_tracker": "https://github.com/choucheyu/panasonic_ems2/issues",
