@@ -1,0 +1,77 @@
+{
+  "device": {
+    "GWID": "GWID_VX_1",
+    "Auth": "AUTH_REDACTED",
+    "NickName": "VX 空調",
+    "DeviceType": "1",
+    "ModelType": "VX",
+    "Model": "CS-VX28BA2",
+    "Devices": [
+      {
+        "DeviceID": 1,
+        "Name": "",
+        "IsAvailable": true
+      }
+    ]
+  },
+  "response": {
+    "status": "success",
+    "devices": [
+      {
+        "DeviceID": 1,
+        "Info": [
+          {
+            "CommandType": "0x37",
+            "status": 65535
+          },
+          {
+            "CommandType": "0x53",
+            "status": 1
+          },
+          {
+            "CommandType": "0x55",
+            "status": 0
+          },
+          {
+            "CommandType": "0x57",
+            "status": 55
+          },
+          {
+            "CommandType": "0x59",
+            "status": 1
+          },
+          {
+            "CommandType": "0x99",
+            "status": 123
+          }
+        ]
+      },
+      {
+        "DeviceID": 2,
+        "Info": [
+          {
+            "CommandType": "0x57",
+            "status": 45
+          }
+        ]
+      }
+    ]
+  },
+  "existing_information": [
+    {
+      "DeviceID": 1,
+      "status": {
+        "0x00": 0,
+        "0x01": 1,
+        "0x02": 0
+      }
+    }
+  ],
+  "expected_snapshot": {
+    "0x37": -1,
+    "0x53": 1,
+    "0x55": 0,
+    "0x57": 55,
+    "0x59": 1
+  }
+}

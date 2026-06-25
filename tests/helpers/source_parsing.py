@@ -1,0 +1,91 @@
+"""AST utilities for tests that need to inspect Home Assistant-dependent modules."""
+
+from __future__ import annotations
+
+import ast
+import textwrap
+from pathlib import Path
+from typing import Any, Callable
+
+
+def eval_literalish(node: ast.AST, env: dict[str, Any]) -> Any:
+    """Evaluate the small literal/name subset used by integration constants."""
+    if isinstance(node, ast.Constant):
+        return node.value
+
+    if isinstance(node, ast.Name):
+        if node.id not in env:
+            raise KeyError(node.id)
+        return env[node.id]
+
+    if isinstance(node, ast.List):
+        return [eval_literalish(item, env) for item in node.elts]
+
+    if isinstance(node, ast.Tuple):
+        return tuple(eval_literalish(item, env) for item in node.elts)
+
+    if isinstance(node, ast.Dict):
+        parsed: dict[Any, Any] = {}
+        for key, value in zip(node.keys, node.values):
+            if key is None:
+                raise TypeError("dictionary unpacking is not supported")
+            parsed[eval_literalish(key, env)] = eval_literalish(value, env)
+        return parsed
+
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+        if node.func.id == "str" and len(node.args) == 1 and not node.keywords:
+            return str(eval_literalish(node.args[0], env))
+
+    raise TypeError(f"unsupported AST node for lightweight parsing: {ast.dump(node)}")
+
+
+def load_constant_assignments(path: Path) -> dict[str, Any]:
+    """Load literal-ish top-level assignments from a Python source file."""
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(path))
+    env: dict[str, Any] = {}
+
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+
+        names = [target.id for target in node.targets if isinstance(target, ast.Name)]
+        if not names:
+            continue
+
+        try:
+            value = eval_literalish(node.value, env)
+        except (KeyError, TypeError):
+            continue
+
+        for name in names:
+            env[name] = value
+
+    return env
+
+
+def load_method_function(
+    path: Path,
+    *,
+    class_name: str,
+    method_name: str,
+    globals_env: dict[str, Any],
+) -> Callable[..., Any]:
+    """Extract and execute one method as a plain function from a class source file."""
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(path))
+
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != class_name:
+            continue
+
+        for child in node.body:
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child.name == method_name:
+                segment = ast.get_source_segment(source, child)
+                if segment is None:
+                    raise LookupError(f"source segment not found for {class_name}.{method_name}")
+                namespace = dict(globals_env)
+                exec(textwrap.dedent(segment), namespace)
+                return namespace[method_name]
+
+    raise LookupError(f"{class_name}.{method_name} not found in {path}")
