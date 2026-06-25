@@ -563,11 +563,43 @@ WASHING_MACHINE_LX128B_COMMANDS = [
 ]
 
 WASHING_MACHINE_HDH_COMMANDS = [
-    WASHING_MACHINE_OPERATING_STATUS_OLD,
+    # HDH 遠端 CommandList（2026-06-26 只讀確認）有列出、但共用 base 未包含的主包 keys。
+    # 主 DeviceGetInfo 只放遠端 metadata 正式宣告的 command，避免重演冷氣全量輪詢 timeout 問題。
     WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
-    WASHING_MACHINE_53,
-    WASHING_MACHINE_57,
-#    WASHING_MACHINE_68
+    WASHING_MACHINE_60,
+    WASHING_MACHINE_POSTPONE_DRYING_TIME,
+    WASHING_MACHINE_PROGRESS_NEW,
+]
+
+WASHING_MACHINE_HDH_NON_COMMANDLIST_COMMANDS = [
+    # 以下 key 不在 HDH 遠端 CommandList；不可留在主包，避免 DeviceGetInfo 大包 timeout。
+    WASHING_MACHINE_TIMER_REMAINING_TIME,
+    WASHING_MACHINE_ENERGY,
+    WASHING_MACHINE_POSTPONE_DRYING,
+    WASHING_MACHINE_52,
+    WASHING_MACHINE_66,
+    WASHING_MACHINE_67,
+    WASHING_MACHINE_REMOTE_CONTROL,
+    WASHING_MACHINE_DETERGENT_AMOUNT,
+    WASHING_MACHINE_SOFTENER_AMOUNT,
+]
+
+WASHING_MACHINE_HDH_SUPPLEMENTAL_COMMANDS = [
+    # 以下 key 不在 HDH 遠端 CommandList，但已由實機小包 DeviceGetInfo / observation 確認可讀；改走 supplemental 小包。
+    WASHING_MACHINE_TIMER_REMAINING_TIME,  # 0x58：預約完成剩餘時間（分鐘），曾隨官方 App 預約倒數變化。
+    WASHING_MACHINE_REMOTE_CONTROL,        # 0x74：遙控狀態，小包讀取確認 1/0。
+    WASHING_MACHINE_DETERGENT_AMOUNT,      # 0x76：洗劑投入設定 mL。
+    WASHING_MACHINE_SOFTENER_AMOUNT,       # 0x77：柔軟劑投入設定 mL。
+
+    # 以下 key 目前不是 HDH 遠端 CommandList 主包，且語意或穩定性尚未確認；先不要常態讀取。
+    # WASHING_MACHINE_OPERATING_STATUS_OLD,      # 0x03：舊式狀態欄位，與 0x50 關係未確認。
+    # WASHING_MACHINE_POSTPONE_DRYING,           # 0x56：延後晾衣狀態/設定語意未確認。
+    # WASHING_MACHINE_52,                        # 0x52：未知欄位，尚未對應官方 App 顯示。
+    # WASHING_MACHINE_53,                        # 0x53：未知欄位，尚未對應官方 App 顯示。
+    # WASHING_MACHINE_57,                        # 0x57：未知欄位，尚未對應官方 App 顯示。
+    # WASHING_MACHINE_66,                        # 0x66：未知欄位，尚未對應官方 App 顯示。
+    # WASHING_MACHINE_67,                        # 0x67：未知欄位，尚未對應官方 App 顯示。
+    # WASHING_MACHINE_ENERGY,                    # 0x1E：HDH 遠端 CommandList 未列，避免主包輪詢。
 ]
 
 WASHING_MACHINE_KBS_COMMANDS = [
@@ -748,10 +780,13 @@ EXTRA_COMMANDS = {
     },
     str(DEVICE_TYPE_WASHING_MACHINE): {
         "LX128B": WASHING_MACHINE_LX128B_COMMANDS,
-        "DDH": WASHING_MACHINE_HDH_COMMANDS,
-        "DW": WASHING_MACHINE_HDH_COMMANDS,
         "HDH": WASHING_MACHINE_HDH_COMMANDS,
-        "MDH": WASHING_MACHINE_HDH_COMMANDS,
+
+        # DDH/DW/MDH 過去與 HDH 共用舊式 extra commands，但本次只遠端確認 NA-V160HDH；
+        # 未確認 model 先不要套 HDH 主包補足，避免把未確認 command 放進主 DeviceGetInfo。
+        # "DDH": WASHING_MACHINE_HDH_COMMANDS,
+        # "DW": WASHING_MACHINE_HDH_COMMANDS,
+        # "MDH": WASHING_MACHINE_HDH_COMMANDS,
         "KBS": WASHING_MACHINE_KBS_COMMANDS,
         "LM": WASHING_MACHINE_KBS_COMMANDS,
         "LMS": WASHING_MACHINE_KBS_COMMANDS
@@ -768,6 +803,15 @@ SUPPLEMENTAL_COMMANDS = {
         "UJ": CLIMATE_UJ_SUPPLEMENTAL_COMMANDS,
         "UK": CLIMATE_UK_SUPPLEMENTAL_COMMANDS,
         "uk": CLIMATE_UK_SUPPLEMENTAL_COMMANDS,
+    },
+    str(DEVICE_TYPE_WASHING_MACHINE): {
+        "HDH": WASHING_MACHINE_HDH_SUPPLEMENTAL_COMMANDS,
+
+        # DDH/DW/MDH 與 HDH 過去共用舊式 extra commands，但本次只遠端確認 NA-V160HDH；
+        # 未確認 model 先不要套 supplemental，避免把非主包 key 放回常態輪詢。
+        # "DDH": WASHING_MACHINE_HDH_SUPPLEMENTAL_COMMANDS,
+        # "DW": WASHING_MACHINE_HDH_SUPPLEMENTAL_COMMANDS,
+        # "MDH": WASHING_MACHINE_HDH_SUPPLEMENTAL_COMMANDS,
     }
 }
 
@@ -786,6 +830,7 @@ EXCESS_COMMANDS = {
     str(DEVICE_TYPE_LIGHT): {
     },
     str(DEVICE_TYPE_WASHING_MACHINE): {
+        "HDH": WASHING_MACHINE_HDH_NON_COMMANDLIST_COMMANDS,
     },
     str(DEVICE_TYPE_AIRPURIFIER): {
     }
@@ -1682,6 +1727,13 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
         icon="mdi:clock-start"
     ),
     PanasonicSensorDescription(
+        key=WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
+        name="預約殘時間(CommandList)",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        icon="mdi:clock-alert-outline"
+    ),
+    PanasonicSensorDescription(
         key=WASHING_MACHINE_TIMER_REMAINING_TIME,
         name="預約完成剩餘時間",
         state_class=SensorStateClass.MEASUREMENT,
@@ -1694,6 +1746,20 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
         icon="mdi:alert-circle"
     ),
     PanasonicSensorDescription(
+        key=WASHING_MACHINE_60,
+        name="時間調整(CommandList)",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTime.HOURS,
+        icon="mdi:clock-edit-outline"
+    ),
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_POSTPONE_DRYING_TIME,
+        name="延後晾衣設定(CommandList)",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTime.HOURS,
+        icon="mdi:hanger"
+    ),
+    PanasonicSensorDescription(
         key=WASHING_MACHINE_CURRENT_MODE,
         name="目前模式",
         device_class=SensorDeviceClass.ENUM,
@@ -1704,6 +1770,12 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
         name="目前進度",
         device_class=SensorDeviceClass.ENUM,
         icon="mdi:progress-helper"
+    ),
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_PROGRESS_NEW,
+        name="行程設定(CommandList)",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:washing-machine"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_POSTPONE_DRYING,

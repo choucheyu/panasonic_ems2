@@ -31,6 +31,18 @@ def _constants() -> dict[str, object]:
     return load_constant_assignments(CONST_PATH)
 
 
+def _hdh_main_polling_commands(const: dict[str, object]) -> list[str]:
+    commands_type = cast(dict[str, list[str]], const["COMMANDS_TYPE"])
+    extra_commands = cast(dict[str, dict[str, list[str]]], const["EXTRA_COMMANDS"])
+    excess_commands = cast(dict[str, dict[str, list[str]]], const["EXCESS_COMMANDS"])
+    washer_type = str(const["DEVICE_TYPE_WASHING_MACHINE"])
+    base = commands_type[washer_type]
+    extra = extra_commands[washer_type]["HDH"]
+    excess = set(excess_commands[washer_type]["HDH"])
+
+    return [command for command in base + extra if command not in excess]
+
+
 def _eval_description_value(node: ast.AST, env: dict[str, object]) -> Any:
     if isinstance(node, ast.Constant):
         return node.value
@@ -116,17 +128,57 @@ def test_unconfirmed_delay_airing_controls_are_not_exposed_as_writable_selects()
     )
 
 
-def test_washer_status_polling_uses_confirmed_observed_keys() -> None:
-    """Poll confirmed observed status keys and avoid unconfirmed delay time 0x61."""
+def test_washer_status_polling_uses_remote_commandlist_keys() -> None:
+    """HDH main polling follows the 12 commands advertised by the remote CommandList."""
     const = _constants()
-    commands_type = cast(dict[str, list[str]], const["COMMANDS_TYPE"])
-    washer_commands = commands_type[str(const["DEVICE_TYPE_WASHING_MACHINE"])]
+    washer_commands = _hdh_main_polling_commands(const)
 
-    assert const["WASHING_MACHINE_PROGRESS"] not in washer_commands
-    assert const["WASHING_MACHINE_POSTPONE_DRYING_TIME"] not in washer_commands
-    assert const["WASHING_MACHINE_TIMER_REMAINING_TIME"] in washer_commands
-    assert const["WASHING_MACHINE_DETERGENT_AMOUNT"] in washer_commands
-    assert const["WASHING_MACHINE_SOFTENER_AMOUNT"] in washer_commands
+    expected_remote_commandlist = [
+        const["WASHING_MACHINE_ENABLE"],
+        const["WASHING_MACHINE_REMAING_WASH_TIME"],
+        const["WASHING_MACHINE_TIMER"],
+        const["WASHING_MACHINE_ERROR_CODE"],
+        const["WASHING_MACHINE_OPERATING_STATUS"],
+        const["WASHING_MACHINE_CURRENT_MODE"],
+        const["WASHING_MACHINE_CURRENT_PROGRESS"],
+        const["WASHING_MACHINE_WARM_WATER"],
+        const["WASHING_MACHINE_TIMER_REMAINING_TIME_OLD"],
+        const["WASHING_MACHINE_60"],
+        const["WASHING_MACHINE_POSTPONE_DRYING_TIME"],
+        const["WASHING_MACHINE_PROGRESS_NEW"],
+    ]
+
+    assert washer_commands == expected_remote_commandlist
+    assert len(washer_commands) == 12
+
+
+def test_hdh_observation_only_keys_are_supplemental_not_main_polling() -> None:
+    """Confirmed non-CommandList keys are isolated like climate supplemental reads."""
+    const = _constants()
+    washer_type = str(const["DEVICE_TYPE_WASHING_MACHINE"])
+    supplemental = cast(dict[str, dict[str, list[str]]], const["SUPPLEMENTAL_COMMANDS"])[washer_type]["HDH"]
+    washer_commands = _hdh_main_polling_commands(const)
+
+    expected_supplemental = [
+        const["WASHING_MACHINE_TIMER_REMAINING_TIME"],
+        const["WASHING_MACHINE_REMOTE_CONTROL"],
+        const["WASHING_MACHINE_DETERGENT_AMOUNT"],
+        const["WASHING_MACHINE_SOFTENER_AMOUNT"],
+    ]
+
+    assert supplemental == expected_supplemental
+    assert set(supplemental).isdisjoint(washer_commands)
+
+
+def test_uncertain_hdh_keys_stay_commented_with_traditional_chinese_rationale() -> None:
+    """Unconfirmed keys must stay disabled until mapped to official app behavior."""
+    source = CONST_PATH.read_text(encoding="utf-8")
+
+    assert "以下 key 目前不是 HDH 遠端 CommandList 主包，且語意或穩定性尚未確認" in source
+    assert "# WASHING_MACHINE_OPERATING_STATUS_OLD" in source
+    assert "# WASHING_MACHINE_POSTPONE_DRYING" in source
+    assert "# WASHING_MACHINE_53" in source
+    assert "# WASHING_MACHINE_57" in source
 
 
 def test_unconfirmed_delay_airing_time_has_no_set_command() -> None:
@@ -153,6 +205,16 @@ def test_confirmed_detergent_and_softener_amount_sensors_use_ml() -> None:
     assert detergent["native_unit_of_measurement"] == "mL"
     assert softener["name"] == "柔軟劑投入設定"
     assert softener["native_unit_of_measurement"] == "mL"
+
+
+def test_hdh_remote_commandlist_keys_have_readable_entities() -> None:
+    """Every confirmed HDH main command is visible as a read-only sensor or a switch."""
+    const = _constants()
+    sensor_descriptions = _description_metadata("WASHING_MACHINE_SENSORS")
+    switch_keys = set(_description_keys("WASHING_MACHINE_SWITCHES"))
+    visible_keys = set(sensor_descriptions) | switch_keys
+
+    assert set(_hdh_main_polling_commands(const)) <= visible_keys
 
 
 def test_reservation_countdown_sensor_uses_observed_0x58_name() -> None:

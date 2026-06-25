@@ -583,6 +583,11 @@ class PanasonicSmartHome(object):
         Returns:
             list: the info of device
         """
+        if str(device_type) == str(DEVICE_TYPE_WASHING_MACHINE):
+            # 洗衣機遇到 cloud/network busy 時不可用假資料 0 覆蓋狀態；
+            # 否則 0x74 遙控、0x50 運轉情報等會被 HA 誤顯示為關閉/離線。
+            return []
+
         commands = COMMANDS_TYPE.get(str(device_type), None)
         extra_cmds = EXTRA_COMMANDS.get(str(device_type), {}).get(model_type, [])
         status = {}
@@ -805,7 +810,9 @@ class PanasonicSmartHome(object):
                 # No status code, it maybe offline or power off of washing machine or network busy
                 # _LOGGER.warning(f"gwid {gwid} is offline {self._devices_info[gwid]}!")
                 if device_type in [str(DEVICE_TYPE_WASHING_MACHINE)]:
-                    self._devices_info[gwid]["Information"] = self._offline_info(device_type, model_type)
+                    # Panasonic cloud 對洗衣機偶發回空 status 時，只能視為 transient unknown。
+                    # 保留上一筆有效 Information；沒有上一筆時才設為空，避免把 0x74/0x50 等狀態 fake 成 0。
+                    self._devices_info[gwid].setdefault("Information", [])
                 continue
 
             if not self.is_supported(model_type):
