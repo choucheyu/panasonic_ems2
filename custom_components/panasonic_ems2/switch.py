@@ -6,8 +6,6 @@ from datetime import timedelta
 from homeassistant.components.switch import (
     SwitchEntity
 )
-from homeassistant.const import STATE_UNAVAILABLE
-
 from .core.base import PanasonicBaseEntity
 from .core.const import (
     DOMAIN,
@@ -126,14 +124,14 @@ class PanasonicSwitch(PanasonicBaseEntity, SwitchEntity):
         )
 
     @property
-    def is_on(self) -> int:
+    def is_on(self) -> bool | None:
         device_id = self.device_id
         info = self.coordinator.data
         status = self.get_status(info)
 
         avaiable = status.get(self.entity_description.key, None)
         if avaiable is None:
-            return STATE_UNAVAILABLE
+            return None
 
         if ((int(info[self.device_gwid].get("DeviceType")) == DEVICE_TYPE_LIGHT) and
                 (self.entity_description.key == LIGHT_POWER)):
@@ -142,11 +140,11 @@ class PanasonicSwitch(PanasonicBaseEntity, SwitchEntity):
                 if operation_state != None:
                     state = (int(operation_state) & (1 << (device_id - 1))) >> (device_id - 1)
                     return bool(state)
-            return STATE_UNAVAILABLE
+            return None
 
         state = status.get(self.entity_description.key)
         if not isinstance(state, int):
-            return STATE_UNAVAILABLE
+            return None
         return self._raw_value_to_is_on(int(status.get(self.entity_description.key, 0)))
 
     async def async_turn_on(self) -> None:

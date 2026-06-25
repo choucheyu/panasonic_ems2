@@ -71,7 +71,7 @@ def get_key_from_dict(dictionary, value):
 class PanasonicHumidifier(PanasonicBaseEntity, HumidifierEntity):
 
     _attr_supported_features = HumidifierEntityFeature.MODES
-    _attr_device_class = HumidifierDeviceClass.HUMIDIFIER
+    _attr_device_class = HumidifierDeviceClass.DEHUMIDIFIER
 
     def __init__(
         self,

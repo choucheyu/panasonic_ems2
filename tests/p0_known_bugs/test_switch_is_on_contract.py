@@ -22,10 +22,6 @@ def _method_node(class_name: str, method_name: str) -> ast.AsyncFunctionDef | as
 
 
 @pytest.mark.p0_bug
-@pytest.mark.xfail(
-    strict=True,
-    reason="known P0 bug: switch is_on returns STATE_UNAVAILABLE instead of bool | None",
-)
 def test_switch_is_on_returns_bool_or_none_not_state_unavailable_string() -> None:
     """Home Assistant SwitchEntity.is_on should return bool | None, not a state string."""
     method = _method_node("PanasonicSwitch", "is_on")

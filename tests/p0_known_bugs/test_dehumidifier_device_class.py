@@ -20,10 +20,6 @@ def _class_node(class_name: str) -> ast.ClassDef:
 
 
 @pytest.mark.p0_bug
-@pytest.mark.xfail(
-    strict=True,
-    reason="known P0 bug: dehumidifier platform currently declares HumidifierDeviceClass.HUMIDIFIER",
-)
 def test_dehumidifier_entity_uses_dehumidifier_device_class() -> None:
     """A Panasonic dehumidifier entity should identify as a dehumidifier in HA."""
     klass = _class_node("PanasonicHumidifier")

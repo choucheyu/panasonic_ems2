@@ -212,7 +212,7 @@ class PanasonicFan(PanasonicBaseEntity, FanEntity):
         device_id = self.device_id
         if self._device_type == DEVICE_TYPE_FAN:
             await self.client.set_device(
-                gwid, device_id, FAN_OPERATING_MODE, FAN_PRESET_MODES[preset_mode], 1)
+                gwid, device_id, FAN_OPERATING_MODE, FAN_PRESET_MODES[preset_mode])
         if self._device_type == DEVICE_TYPE_AIRPURIFIER:
             if preset_mode == AIRPURIFIER_NANOEX_PRESET:
                 await self.client.set_device(

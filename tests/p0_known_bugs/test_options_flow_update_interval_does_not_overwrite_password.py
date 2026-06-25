@@ -38,10 +38,6 @@ def _assigns_self_attr_from_name(node: ast.AST, *, attr_name: str, source_name: 
 
 
 @pytest.mark.p0_bug
-@pytest.mark.xfail(
-    strict=True,
-    reason="known P0 bug: options flow currently stores CONF_UPDATE_INTERVAL into _password",
-)
 def test_options_flow_update_interval_does_not_overwrite_password() -> None:
     """Changing update interval must update _update_interval, never _password."""
     method = _method_node("OptionsFlowHandler", "async_step_init")

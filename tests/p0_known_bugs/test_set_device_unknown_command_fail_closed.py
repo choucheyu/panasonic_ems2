@@ -22,10 +22,6 @@ def _method_node(class_name: str, method_name: str) -> ast.AsyncFunctionDef | as
 
 
 @pytest.mark.p0_bug
-@pytest.mark.xfail(
-    strict=True,
-    reason="known P0 bug: unknown set_device commands currently guess int(func, 16) + 128 instead of failing closed",
-)
 def test_set_device_unknown_command_fails_closed_without_guessing_set_id() -> None:
     """Unknown write commands should not be synthesized from read command ids."""
     method = _method_node("PanasonicSmartHome", "set_device")

@@ -182,7 +182,7 @@ class OptionsFlowHandler(OptionsFlow):
             if len(user_input.get(CONF_PASSWORD, "")) >= 1:
                 self._password = user_input.get(CONF_PASSWORD)
 
-            self._password = user_input.get(
+            self._update_interval = user_input.get(
                 CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
 
             return self.async_create_entry(

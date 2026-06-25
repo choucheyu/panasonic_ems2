@@ -33,10 +33,6 @@ def _is_self_client_set_device_call(node: ast.Call) -> bool:
 
 
 @pytest.mark.p0_bug
-@pytest.mark.xfail(
-    strict=True,
-    reason="known P0 bug: fan preset mode currently passes an extra argument to set_device",
-)
 def test_fan_set_preset_mode_calls_set_device_with_expected_argument_count() -> None:
     """set_device expects gwid, device_id, func, value after self."""
     method = _method_node("PanasonicFan", "async_set_preset_mode")

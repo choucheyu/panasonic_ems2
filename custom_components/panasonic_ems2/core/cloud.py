@@ -900,8 +900,8 @@ class PanasonicSmartHome(object):
         device_type = self._devices_info[gwid]["DeviceType"]
         cmd = SET_COMMAND_TYPE[device_type].get(func, None)
         if cmd is None:
-            _LOGGER.error(f"There is no cmd for {gwid}!")
-            cmd = int(func, 16) + 128
+            _LOGGER.error(f"There is no cmd for {gwid}: {func}!")
+            return
 
         header = {"CPToken": self._cp_token, "auth": auth}
         param = {"DeviceID": device_id, "CommandType": cmd, "Value": value}
