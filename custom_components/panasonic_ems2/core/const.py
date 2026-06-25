@@ -550,6 +550,8 @@ WASHING_MACHINE_71 = "0x71"
 WASHING_MACHINE_72 = "0x72"
 WASHING_MACHINE_73 = "0x73"
 WASHING_MACHINE_REMOTE_CONTROL = "0x74"
+WASHING_MACHINE_DETERGENT_AMOUNT = "0x76"
+WASHING_MACHINE_SOFTENER_AMOUNT = "0x77"
 
 WASHING_MACHINE_MODELS = ["DDH", "DW","HDH", "MDH"]
 WASHING_MACHINE_2020_MODELS = ["KBS", "LM", "LMS"]
@@ -700,12 +702,13 @@ COMMANDS_TYPE= {
         WASHING_MACHINE_CURRENT_MODE,
         WASHING_MACHINE_CURRENT_PROGRESS,
         WASHING_MACHINE_POSTPONE_DRYING,
-        WASHING_MACHINE_POSTPONE_DRYING_TIME,
         WASHING_MACHINE_WARM_WATER,
         WASHING_MACHINE_52,
         WASHING_MACHINE_66,
         WASHING_MACHINE_67,
-        WASHING_MACHINE_REMOTE_CONTROL
+        WASHING_MACHINE_REMOTE_CONTROL,
+        WASHING_MACHINE_DETERGENT_AMOUNT,
+        WASHING_MACHINE_SOFTENER_AMOUNT
     ],
     str(DEVICE_TYPE_WEIGHT_PLATE): [
         WEIGHT_PLATE_GET_WEIGHT
@@ -851,10 +854,8 @@ SET_COMMAND_TYPE = {
     },
     str(DEVICE_TYPE_WASHING_MACHINE): {
         WASHING_MACHINE_ENABLE: 1,
-        WASHING_MACHINE_TIMER: 20,
         WASHING_MACHINE_PROGRESS: 130,
         WASHING_MACHINE_PROGRESS_NEW: 100,
-        WASHING_MACHINE_POSTPONE_DRYING_TIME: 97,
         WASHING_MACHINE_WARM_WATER: 105
     },
     str(DEVICE_TYPE_FRIDGE): {
@@ -1399,24 +1400,7 @@ FRIDGE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     )
 )
 
-WASHING_MACHINE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
-    PanasonicSelectDescription(
-        key=WASHING_MACHINE_TIMER,
-        name="預約時間",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:clock',
-        options=["0", "1", "2", "3", "4", "5", "6", "7", "8"],
-        options_value=["0", "1", "2", "3", "4", "5", "6", "7", "8"]
-    ),
-    PanasonicSelectDescription(
-        key=WASHING_MACHINE_POSTPONE_DRYING_TIME,
-        name="延後晾衣時間設定",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:clock',
-        options=["1", "2", "3", "4", "5", "6", "7", "8"],
-        options_value=["1", "2", "3", "4", "5", "6", "7", "8"]
-    )
-)
+WASHING_MACHINE_SELECTS: tuple[PanasonicSelectDescription, ...] = ()
 
 
 @dataclass
@@ -1691,8 +1675,15 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
         icon="mdi:clock"
     ),
     PanasonicSensorDescription(
+        key=WASHING_MACHINE_TIMER,
+        name="預約設定時間",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTime.HOURS,
+        icon="mdi:clock-start"
+    ),
+    PanasonicSensorDescription(
         key=WASHING_MACHINE_TIMER_REMAINING_TIME,
-        name="定時剩餘時間",
+        name="預約完成剩餘時間",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.MINUTES,
         icon="mdi:clock-outline"
@@ -1716,7 +1707,7 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_POSTPONE_DRYING,
-        name="自動延後晾衣",
+        name="延後晾衣狀態(raw)",
         icon="mdi:hanger"
     ),
     PanasonicSensorDescription(
@@ -1749,6 +1740,20 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
         key=WASHING_MACHINE_REMOTE_CONTROL,
         name="遙控",
         icon='mdi:cog'
+    ),
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_DETERGENT_AMOUNT,
+        name="洗劑投入設定",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="mL",
+        icon="mdi:bottle-tonic-outline"
+    ),
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_SOFTENER_AMOUNT,
+        name="柔軟劑投入設定",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="mL",
+        icon="mdi:bottle-tonic-plus-outline"
     )
 )
 

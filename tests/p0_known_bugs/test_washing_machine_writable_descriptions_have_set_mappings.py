@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 from tests.p0_known_bugs.test_climate_writable_descriptions_have_set_mappings import (
     _description_keys,
     _literal_env,
@@ -24,13 +22,10 @@ def test_washing_machine_writable_entity_descriptions_have_explicit_set_mappings
     assert missing == []
 
 
-def test_washing_machine_postpone_drying_time_uses_api_set_command_0x61() -> None:
-    """The writable time-setting entity maps directly to cloud command 0x61."""
+def test_unconfirmed_washing_machine_delay_airing_time_is_not_writable() -> None:
+    """0x61 is not a confirmed writable delay-airing time command for HDH."""
     env = _literal_env()
     set_commands = env["SET_COMMAND_TYPE"][str(env["DEVICE_TYPE_WASHING_MACHINE"])]  # type: ignore[index]
 
     assert env["WASHING_MACHINE_POSTPONE_DRYING"] not in set_commands
-    assert set_commands[env["WASHING_MACHINE_POSTPONE_DRYING_TIME"]] == int(
-        cast(str, env["WASHING_MACHINE_61"]),
-        16,
-    )
+    assert env["WASHING_MACHINE_POSTPONE_DRYING_TIME"] not in set_commands
