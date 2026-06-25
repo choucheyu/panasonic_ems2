@@ -244,6 +244,12 @@ CLIMATE_VX_COMMMANDS = [
             #    CLIMATE_VOICE,
             #    CLIMATE_PM25
 ]
+CLIMATE_UX_COMMMANDS = [
+]
+CLIMATE_UJ_COMMMANDS = [
+]
+CLIMATE_UK_COMMMANDS = [
+]
 # Supplemental read-path checklist for new climate keys:
 # 1. define CLIMATE_XXX = "0x.."
 # 2. add the key to the appropriate *_SUPPLEMENTAL_COMMANDS list / SUPPLEMENTAL_COMMANDS
@@ -256,8 +262,38 @@ CLIMATE_VX_SUPPLEMENTAL_COMMANDS = [
                 CLIMATE_HUMIDITY_INDOOR,
                 CLIMATE_VOICE,
             ]
+CLIMATE_UX_SUPPLEMENTAL_COMMANDS = [
+                CLIMATE_PM25,
+                CLIMATE_MONITOR_MILDEW,
+                CLIMATE_IMMEDIATE_MILDEW_DRY,
+                # UX 官方有「室內溫濕度監控」，但目前只有 VX 實機確認 0x57 室內濕度；
+                # 待 UX cloud/status snapshot 確認後再啟用，避免產生錯誤濕度 entity。
+                # CLIMATE_HUMIDITY_INDOOR,
+                CLIMATE_VOICE,
+            ]
+CLIMATE_UJ_SUPPLEMENTAL_COMMANDS = [
+                # UJ 官方有「防霉監控」，但描述為每 24 小時固定啟動，
+                # 尚未確認是否等同 VX/UX 的 0x53 可寫開關，先保守關閉。
+                # CLIMATE_MONITOR_MILDEW,
+                # UJ 官方未列 PM2.5 可視化，先不要啟用 0x37。
+                # CLIMATE_PM25,
+                # UJ 未確認是否支援 UX/VX 的 10/20/40/60 分鐘立即乾燥防霉 0x55。
+                # CLIMATE_IMMEDIATE_MILDEW_DRY,
+                # UJ 未確認 0x57 室內濕度與 0x59 聲控開關。
+                # CLIMATE_HUMIDITY_INDOOR,
+                # CLIMATE_VOICE,
+            ]
+CLIMATE_UK_SUPPLEMENTAL_COMMANDS = [
+                # UK/U 官方僅列防霉監控、自體淨、乾燥防霉等基本清潔功能，
+                # 未確認是否有 VX/UX supplemental command；高風險功能先保守關閉。
+                # CLIMATE_MONITOR_MILDEW,
+                # CLIMATE_PM25,
+                # CLIMATE_IMMEDIATE_MILDEW_DRY,
+                # CLIMATE_HUMIDITY_INDOOR,
+                # CLIMATE_VOICE,
+            ]
 CLIMATE_PXGD_MODELS = [
-    "J-DUCT", "SX-DUCT", "GX", "LJ", "LX", "PX", "QX", "LJV" ,"PXGD", "VX"
+    "J-DUCT", "SX-DUCT", "GX", "LJ", "LX", "PX", "QX", "LJV", "PXGD", "VX", "UX", "UJ", "UK", "uk"
 ]
 
 CLIMATE_PM10_MODELS = [
@@ -269,7 +305,7 @@ CLIMATE_PM10_2_MODELS = [
 ]
 
 CLIMATE_PM25_MODELS = [
-    "EHW", "GHW", "JHW", "JHV2" ,"VX"
+    "EHW", "GHW", "JHW", "JHV2", "VX", "UX"
 ]
 
 # Declarative range-family alias for climate option/range lookups.
@@ -279,6 +315,25 @@ CLIMATE_PM25_MODELS = [
 CLIMATE_RANGE_FAMILY = {
     "VX": {
         CLIMATE_OPERATING_MODE: "PXGD",
+        CLIMATE_FAN_SPEED: "PXGD",
+    },
+    "UX": {
+        CLIMATE_OPERATING_MODE: "PXGD",
+        CLIMATE_FAN_SPEED: "PXGD",
+    },
+    "UJ": {
+        CLIMATE_OPERATING_MODE: "PXGD",
+        CLIMATE_FAN_SPEED: "PXGD",
+    },
+    "UK": {
+        # UK/uk 官方有冷專與冷暖室外機差異；未能從 cloud 判斷前，
+        # 先不要借 PXGD 的運轉模式 range，避免冷專機型錯誤暴露「暖氣」。
+        # CLIMATE_OPERATING_MODE: "PXGD",
+        CLIMATE_FAN_SPEED: "PXGD",
+    },
+    "uk": {
+        # Panasonic cloud 若回傳小寫 uk，同樣先只借風量 range。
+        # CLIMATE_OPERATING_MODE: "PXGD",
         CLIMATE_FAN_SPEED: "PXGD",
     },
 }
@@ -661,6 +716,10 @@ EXTRA_COMMANDS = {
 #        "RX-N": CLIMATE_RX_COMMANDS + [CLIMATE_MONITOR_MILDEW],
 #        "PXGD": CLIMATE_PXGD_COMMMANDS,
           "VX": CLIMATE_VX_COMMMANDS,
+          "UX": CLIMATE_UX_COMMMANDS,
+          "UJ": CLIMATE_UJ_COMMMANDS,
+          "UK": CLIMATE_UK_COMMMANDS,
+          "uk": CLIMATE_UK_COMMMANDS,
         "RX-N": CLIMATE_RX_COMMANDS,
         "RX-G": CLIMATE_RX_COMMANDS,
         "RX-J": CLIMATE_RX_COMMANDS
@@ -701,6 +760,10 @@ SUPPLEMENTAL_COMMANDS = {
     str(DEVICE_TYPE_CLIMATE): {
         "PXGD": CLIMATE_PXGD_SUPPLEMENTAL_COMMANDS,
         "VX": CLIMATE_VX_SUPPLEMENTAL_COMMANDS,
+        "UX": CLIMATE_UX_SUPPLEMENTAL_COMMANDS,
+        "UJ": CLIMATE_UJ_SUPPLEMENTAL_COMMANDS,
+        "UK": CLIMATE_UK_SUPPLEMENTAL_COMMANDS,
+        "uk": CLIMATE_UK_SUPPLEMENTAL_COMMANDS,
     }
 }
 

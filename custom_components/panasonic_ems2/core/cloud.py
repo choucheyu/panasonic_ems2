@@ -331,7 +331,7 @@ class PanasonicSmartHome(object):
         """
         try:
             new = int(status)
-            if (model_type in ["VX"] and
+            if (model_type in ["VX", "UX"] and
                     command_type == CLIMATE_PM25 and
                     int(status) == 65535
                 ):
