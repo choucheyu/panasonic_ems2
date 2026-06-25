@@ -540,6 +540,7 @@ WASHING_MACHINE_TIMER_REMAINING_TIME = "0x58"
 WASHING_MACHINE_59 = "0x59"
 WASHING_MACHINE_60 = "0x60"
 WASHING_MACHINE_61 = "0x61"
+WASHING_MACHINE_POSTPONE_DRYING_TIME = WASHING_MACHINE_61
 WASHING_MACHINE_PROGRESS_NEW = "0x64"
 WASHING_MACHINE_66 = "0x66"
 WASHING_MACHINE_67 = "0x67"
@@ -699,7 +700,7 @@ COMMANDS_TYPE= {
         WASHING_MACHINE_CURRENT_MODE,
         WASHING_MACHINE_CURRENT_PROGRESS,
         WASHING_MACHINE_POSTPONE_DRYING,
-        WASHING_MACHINE_PROGRESS,
+        WASHING_MACHINE_POSTPONE_DRYING_TIME,
         WASHING_MACHINE_WARM_WATER,
         WASHING_MACHINE_52,
         WASHING_MACHINE_66,
@@ -853,7 +854,7 @@ SET_COMMAND_TYPE = {
         WASHING_MACHINE_TIMER: 20,
         WASHING_MACHINE_PROGRESS: 130,
         WASHING_MACHINE_PROGRESS_NEW: 100,
-        WASHING_MACHINE_POSTPONE_DRYING: 97,
+        WASHING_MACHINE_POSTPONE_DRYING_TIME: 97,
         WASHING_MACHINE_WARM_WATER: 105
     },
     str(DEVICE_TYPE_FRIDGE): {
@@ -1400,28 +1401,20 @@ FRIDGE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
 
 WASHING_MACHINE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     PanasonicSelectDescription(
-        key=WASHING_MACHINE_PROGRESS,
-        name="行程",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:washing-machine',
-        options=["Standard", "Soft Wash", "Strong Wash", "Wash with Shirt", "Wash with Blanket", "Wash with High-end clothing", "Wash with Woolen fabrics", "User-defined Wash", "Soak Wash", "Dry Clean", "Quick Wash", "Tank Wash", "Wash with Warm Water"],
-        options_value=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"]
-    ),
-    PanasonicSelectDescription(
         key=WASHING_MACHINE_TIMER,
         name="預約時間",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:clock',
-        options=["0", "1", "2", "3"],
-        options_value=["0", "1", "2", "3"]
+        options=["0", "1", "2", "3", "4", "5", "6", "7", "8"],
+        options_value=["0", "1", "2", "3", "4", "5", "6", "7", "8"]
     ),
     PanasonicSelectDescription(
-        key=WASHING_MACHINE_POSTPONE_DRYING,
-        name="延後烘乾",
+        key=WASHING_MACHINE_POSTPONE_DRYING_TIME,
+        name="延後晾衣時間設定",
         entity_category=EntityCategory.CONFIG,
         icon='mdi:clock',
-        options=["Off", "1", "2", "3", "4", "5", "6", "7", "8"],
-        options_value=["0", "1", "2", "3", "4", "5", "6", "7", "8"]
+        options=["1", "2", "3", "4", "5", "6", "7", "8"],
+        options_value=["1", "2", "3", "4", "5", "6", "7", "8"]
     )
 )
 
@@ -1720,6 +1713,11 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
         name="目前進度",
         device_class=SensorDeviceClass.ENUM,
         icon="mdi:progress-helper"
+    ),
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_POSTPONE_DRYING,
+        name="自動延後晾衣",
+        icon="mdi:hanger"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_OPERATING_STATUS,

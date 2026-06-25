@@ -562,10 +562,6 @@ class PanasonicSmartHome(object):
                             parameters["Auto"] = 0
 
                         if model_type in WASHING_MACHINE_MODELS + WASHING_MACHINE_2020_MODELS:
-                            if cmd_type == "0x61":
-                                parameters["Off"] = 0
-                                cmds_para[WASHING_MACHINE_POSTPONE_DRYING] = parameters
-                                cmds_name[WASHING_MACHINE_POSTPONE_DRYING] = cmd["CommandName"]
                             if cmd_type == "0x15":
                                 cmds_para[WASHING_MACHINE_TIMER_REMAINING_TIME] = parameters
                                 cmds_name[WASHING_MACHINE_TIMER_REMAINING_TIME] = cmd["CommandName"]
