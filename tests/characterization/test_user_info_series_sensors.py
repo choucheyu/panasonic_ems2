@@ -21,6 +21,7 @@ from tests.helpers.source_parsing import (
 ROOT = Path(__file__).resolve().parents[2]
 CONST_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "const.py"
 CLOUD_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "cloud.py"
+STATISTICS_BUILDER_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "statistics_builder.py"
 USER_INFO_SERIES_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "user_info_series.py"
 
 
@@ -85,10 +86,16 @@ def _load_tuple_call_attributes(tuple_name: str) -> dict[str, dict[str, Any]]:
 
 def _load_cloud_method(method_name: str):
     constants = load_constant_assignments(CONST_PATH)
-    spec = importlib.util.spec_from_file_location("panasonic_user_info_series", USER_INFO_SERIES_PATH)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    series_spec = importlib.util.spec_from_file_location("panasonic_user_info_series", USER_INFO_SERIES_PATH)
+    assert series_spec is not None and series_spec.loader is not None
+    series_module = importlib.util.module_from_spec(series_spec)
+    series_spec.loader.exec_module(series_module)
+    builder_spec = importlib.util.spec_from_file_location(
+        "panasonic_statistics_builder", STATISTICS_BUILDER_PATH
+    )
+    assert builder_spec is not None and builder_spec.loader is not None
+    builder_module = importlib.util.module_from_spec(builder_spec)
+    builder_spec.loader.exec_module(builder_module)
     return constants, load_method_function(
         CLOUD_PATH,
         class_name="PanasonicSmartHome",
@@ -106,7 +113,10 @@ def _load_cloud_method(method_name: str):
             "UnitOfEnergy": type("UnitOfEnergy", (), {"KILO_WATT_HOUR": "kWh"}),
             "UnitOfVolume": type("UnitOfVolume", (), {"LITERS": "L"}),
             "DOMAIN": "panasonic_ems2",
-            "parse_user_info_series": module.parse_user_info_series,
+            "parse_user_info_series": series_module.parse_user_info_series,
+            "build_user_info_external_statistics_rows": (
+                builder_module.build_user_info_external_statistics_rows
+            ),
         },
     )
 

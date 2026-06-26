@@ -24,6 +24,7 @@ from .exceptions import (
 )
 from . import apis
 from .command_metadata import refactor_command_metadata
+from .statistics_builder import build_user_info_external_statistics_rows
 from .user_info_series import parse_user_info_series
 from .const import (
     APP_TOKEN,
@@ -625,78 +626,10 @@ class PanasonicSmartHome(object):
             },
         ]
 
-    def _safe_statistic_object_id(self, value: str) -> str:
-        """Return a valid external statistics object id fragment."""
-        return "".join(ch.lower() if ch.isalnum() else "_" for ch in str(value)).strip("_")
-
-    def _statistics_start_from_label(self, label: str):
-        """Return timezone-aware local period start from a day/month UserGetInfo label."""
-        if len(label) == 7:
-            naive = datetime.strptime(label, "%Y-%m")
-        else:
-            naive = datetime.strptime(label, "%Y-%m-%d")
-        if hasattr(local_tz, "localize"):
-            return local_tz.localize(naive)
-        return naive.replace(tzinfo=local_tz)
-
-    def _user_info_statistic_metadata(self, gwid, metric_suffix, metric_name, unit, unit_class):
-        """Build recorder external statistics metadata."""
-        safe_gwid = self._safe_statistic_object_id(gwid)
-        statistic_id = f"{DOMAIN}:{safe_gwid}_{metric_suffix}"
-        device_name = self._devices_info.get(gwid, {}).get("NickName", safe_gwid)
-        return StatisticMetaData(
-            mean_type=StatisticMeanType.NONE,
-            has_sum=True,
-            name=f"{device_name} {metric_name}",
-            source=DOMAIN,
-            statistic_id=statistic_id,
-            unit_class=unit_class,
-            unit_of_measurement=unit,
-        )
 
     def _user_info_external_statistics(self, info_type, range_key, labels, response):
         """Convert UserGetInfo bucket values to recorder external statistics rows."""
-        def safe_statistic_object_id(value: str) -> str:
-            return "".join(ch.lower() if ch.isalnum() else "_" for ch in str(value)).strip("_")
-
-        def statistics_start_from_label(label: str):
-            if len(label) == 7:
-                naive = datetime.strptime(label, "%Y-%m")
-            else:
-                naive = datetime.strptime(label, "%Y-%m-%d")
-            if hasattr(local_tz, "localize"):
-                return local_tz.localize(naive)
-            return naive.replace(tzinfo=local_tz)
-
-        def statistic_metadata(gwid, metric_suffix, metric_name, unit, unit_class):
-            safe_gwid = safe_statistic_object_id(gwid)
-            device_name = self._devices_info.get(gwid, {}).get("NickName", safe_gwid)
-            return StatisticMetaData(
-                mean_type=StatisticMeanType.NONE,
-                has_sum=True,
-                name=f"{device_name} {metric_name}",
-                source=DOMAIN,
-                statistic_id=f"{DOMAIN}:{safe_gwid}_{metric_suffix}",
-                unit_class=unit_class,
-                unit_of_measurement=unit,
-            )
-
-        def build_statistics(values):
-            statistics = []
-            running_sum = 0.0
-            for label, value in zip(labels, values):
-                running_sum += value
-                statistics.append(
-                    StatisticData(
-                        start=statistics_start_from_label(label),
-                        state=value,
-                        sum=running_sum,
-                    )
-                )
-            return statistics
-
         rows = []
-        grain = "month" if labels and len(labels[0]) == 7 else "day"
         unit_class_map = {
             "energy": EnergyConverter.UNIT_CLASS,
             "volume": VolumeConverter.UNIT_CLASS,
@@ -706,24 +639,38 @@ class PanasonicSmartHome(object):
             "L": UnitOfVolume.LITERS,
         }
 
-        for metric in parse_user_info_series(
+        metrics = parse_user_info_series(
             info_type,
             response,
             self._devices_info,
             washing_machine_device_type=str(DEVICE_TYPE_WASHING_MACHINE),
+        )
+        for row in build_user_info_external_statistics_rows(
+            metrics=metrics,
+            labels=labels,
+            range_key=range_key,
+            devices_info=self._devices_info,
+            domain=DOMAIN,
+            timezone=local_tz,
         ):
-            metadata = statistic_metadata(
-                metric["gwid"],
-                f"{metric['suffix']}_{grain}",
-                metric["name"],
-                unit_map.get(metric["unit"], metric["unit"]),
-                unit_class_map.get(metric["unit_class"], metric["unit_class"]),
-            )
+            metadata = row["metadata"]
             rows.append(
                 {
-                    "metadata": metadata,
-                    "statistics": build_statistics(metric["values"]),
-                    "range_key": range_key,
+                    "metadata": StatisticMetaData(
+                        mean_type=StatisticMeanType.NONE,
+                        has_sum=metadata["has_sum"],
+                        name=metadata["name"],
+                        source=metadata["source"],
+                        statistic_id=metadata["statistic_id"],
+                        unit_class=unit_class_map.get(
+                            metadata["unit_class"], metadata["unit_class"]
+                        ),
+                        unit_of_measurement=unit_map.get(
+                            metadata["unit_of_measurement"], metadata["unit_of_measurement"]
+                        ),
+                    ),
+                    "statistics": [StatisticData(**data) for data in row["statistics"]],
+                    "range_key": row["range_key"],
                 }
             )
         return rows
