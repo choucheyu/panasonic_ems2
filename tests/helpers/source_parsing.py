@@ -229,6 +229,7 @@ def add_capability_runtime_globals(env: dict[str, Any]) -> dict[str, Any]:
             "build_light_device_command_types": cloud_commands.build_light_device_command_types,
             "build_offline_information": cloud_status.build_offline_information,
             "build_polling_command_types": cloud_commands.build_polling_command_types,
+            "filter_supplemental_snapshot": cloud_commands.filter_supplemental_snapshot,
             "build_user_info_statistics_requests": (
                 user_info_requests.build_user_info_statistics_requests
             ),

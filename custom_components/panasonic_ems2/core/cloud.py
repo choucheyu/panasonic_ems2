@@ -31,6 +31,7 @@ from .capabilities import (
 from .cloud_commands import (
     build_light_device_command_types,
     build_polling_command_types,
+    filter_supplemental_snapshot,
     get_supplemental_keys,
     merge_supplemental_status,
 )
@@ -719,6 +720,7 @@ class PanasonicSmartHome(object):
                     device_id = dev.get("DeviceID", 1)
                     await asyncio.sleep(.1)
                     snap = await self._fetch_device_command_snapshot(device, device_id, supp_keys)
+                    snap = filter_supplemental_snapshot(snap, supp_keys)
                     if snap:
                         supplemental_by_device_id[device_id] = snap
                 if supplemental_by_device_id:
@@ -758,6 +760,7 @@ class PanasonicSmartHome(object):
             if dev.get("DeviceID") in target_ids:
                 await asyncio.sleep(.1)
                 snapshot = await self._fetch_device_command_snapshot(device, dev.get("DeviceID"), supp_keys)
+                snapshot = filter_supplemental_snapshot(snapshot, supp_keys)
                 if snapshot:
                     supplemental_by_device_id[dev.get("DeviceID")] = snapshot
 

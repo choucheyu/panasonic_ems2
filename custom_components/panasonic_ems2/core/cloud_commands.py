@@ -92,6 +92,17 @@ def build_light_device_command_types(
     return _command_type_payload(commands)
 
 
+def filter_supplemental_snapshot(
+    snapshot: Any,
+    keys: Sequence[str],
+) -> dict[str, Any]:
+    """Keep only requested command keys from a supplemental snapshot result."""
+    if not isinstance(snapshot, dict):
+        return {}
+    requested = set(keys)
+    return {key: value for key, value in snapshot.items() if key in requested}
+
+
 def merge_supplemental_status(
     info_list: list[dict[str, Any]],
     supplemental_by_device_id: dict[Any, dict[str, Any]],
