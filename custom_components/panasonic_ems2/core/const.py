@@ -586,10 +586,14 @@ WASHING_MACHINE_HDH_NON_COMMANDLIST_COMMANDS = [
 
 WASHING_MACHINE_HDH_SUPPLEMENTAL_COMMANDS = [
     # 以下 key 不在 HDH 遠端 CommandList，但已由實機小包 DeviceGetInfo / observation 確認可讀；改走 supplemental 小包。
-    WASHING_MACHINE_TIMER_REMAINING_TIME,  # 0x58：預約完成剩餘時間（分鐘），曾隨官方 App 預約倒數變化。
-    WASHING_MACHINE_REMOTE_CONTROL,        # 0x74：遙控狀態，小包讀取確認 1/0。
+    WASHING_MACHINE_TIMER_REMAINING_TIME,  # 0x58：預估洗衣完成時間（分鐘），曾隨官方 App 預約倒數變化。
+    WASHING_MACHINE_ENERGY,                # 0x1E：用電量；不在 HDH CommandList，改用 supplemental 小包。
+    WASHING_MACHINE_REMOTE_CONTROL,        # 0x74：遠端遙控，1 為開啟、0 為關閉。
     WASHING_MACHINE_DETERGENT_AMOUNT,      # 0x76：洗劑投入設定 mL。
     WASHING_MACHINE_SOFTENER_AMOUNT,       # 0x77：柔軟劑投入設定 mL。
+
+    # 0xA2/0xA3/0xB0 是非 DeviceGetInfo 來源的補充顯示 key；
+    # 它們分別由 UserGetInfo / UpdateCheck 補進 Information，不放進此清單，避免錯誤呼叫 DeviceGetInfo。
 
     # 以下 key 目前不是 HDH 遠端 CommandList 主包，且語意或穩定性尚未確認；先不要常態讀取。
     # WASHING_MACHINE_OPERATING_STATUS_OLD,      # 0x03：舊式狀態欄位，與 0x50 關係未確認。
@@ -599,7 +603,44 @@ WASHING_MACHINE_HDH_SUPPLEMENTAL_COMMANDS = [
     # WASHING_MACHINE_57,                        # 0x57：未知欄位，尚未對應官方 App 顯示。
     # WASHING_MACHINE_66,                        # 0x66：未知欄位，尚未對應官方 App 顯示。
     # WASHING_MACHINE_67,                        # 0x67：未知欄位，尚未對應官方 App 顯示。
-    # WASHING_MACHINE_ENERGY,                    # 0x1E：HDH 遠端 CommandList 未列，避免主包輪詢。
+]
+
+WASHING_MACHINE_HDH_SUPPLEMENTAL_DISPLAY_KEYS = [
+    # HDH 顯示層 supplemental：包含 DeviceGetInfo supplemental 與非 DeviceGetInfo 補充資訊。
+    WASHING_MACHINE_TIMER_REMAINING_TIME,
+    WASHING_MACHINE_ENERGY,
+    WASHING_MACHINE_REMOTE_CONTROL,
+    WASHING_MACHINE_DETERGENT_AMOUNT,
+    WASHING_MACHINE_SOFTENER_AMOUNT,
+    ENTITY_WATER_USED,   # 0xA2：當月用水量，由 UserGetInfo 補入。
+    ENTITY_WASH_TIMES,   # 0xA3：當月洗衣次數，由 UserGetInfo 補入。
+    ENTITY_UPDATE,       # 0xB0：版本更新，由 UpdateCheck 補入。
+]
+
+COMMAND_NAME_OVERRIDES = {
+    str(DEVICE_TYPE_WASHING_MACHINE): {
+        WASHING_MACHINE_REMAING_WASH_TIME: "洗衣行程時間",
+        WASHING_MACHINE_TIMER_REMAINING_TIME_OLD: "預估洗衣開始時間",
+        WASHING_MACHINE_TIMER_REMAINING_TIME: "預估洗衣完成時間",
+        WASHING_MACHINE_CURRENT_MODE: "目前洗衣行程",
+        WASHING_MACHINE_CURRENT_PROGRESS: "洗衣行程設定",
+        WASHING_MACHINE_REMOTE_CONTROL: "遠端遙控",
+    }
+}
+
+COMMAND_RANGE_OVERRIDES = {
+    str(DEVICE_TYPE_WASHING_MACHINE): {
+        WASHING_MACHINE_REMOTE_CONTROL: {
+            "關閉": 0,
+            "開啟": 1,
+        },
+    }
+}
+
+WASHING_MACHINE_CLOCK_TIME_KEYS = [
+    WASHING_MACHINE_REMAING_WASH_TIME,
+    WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
+    WASHING_MACHINE_TIMER_REMAINING_TIME,
 ]
 
 WASHING_MACHINE_KBS_COMMANDS = [
@@ -1714,66 +1755,60 @@ LIGHT_SENSORS: tuple[PanasonicSensorDescription, ...] = (
 WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
         key=WASHING_MACHINE_REMAING_WASH_TIME,
-        name="洗衣剩餘時間",
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTime.MINUTES,
+        name="洗衣行程時間",
         icon="mdi:clock"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_TIMER,
-        name="預約設定時間",
+        name="預約時間設定",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.HOURS,
         icon="mdi:clock-start"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
-        name="預約殘時間(CommandList)",
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTime.MINUTES,
+        name="預估洗衣開始時間",
         icon="mdi:clock-alert-outline"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_TIMER_REMAINING_TIME,
-        name="預約完成剩餘時間",
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTime.MINUTES,
+        name="預估洗衣完成時間",
         icon="mdi:clock-outline"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_ERROR_CODE,
-        name="錯誤代碼",
+        name="異常代碼",
         icon="mdi:alert-circle"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_60,
-        name="時間調整(CommandList)",
+        name="時間調整",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.HOURS,
         icon="mdi:clock-edit-outline"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_POSTPONE_DRYING_TIME,
-        name="延後晾衣設定(CommandList)",
+        name="延後晾衣設定",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.HOURS,
         icon="mdi:hanger"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_CURRENT_MODE,
-        name="目前模式",
+        name="目前洗衣行程",
         device_class=SensorDeviceClass.ENUM,
         icon="mdi:washing-machine"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_CURRENT_PROGRESS,
-        name="目前進度",
+        name="洗衣行程設定",
         device_class=SensorDeviceClass.ENUM,
         icon="mdi:progress-helper"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_PROGRESS_NEW,
-        name="行程設定(CommandList)",
+        name="行程設定",
         device_class=SensorDeviceClass.ENUM,
         icon="mdi:washing-machine"
     ),
@@ -1784,18 +1819,18 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_OPERATING_STATUS,
-        name="運轉狀態",
+        name="運轉情報",
         device_class=SensorDeviceClass.ENUM,
         icon="mdi:washing-machine"
     ),
     PanasonicSensorDescription(
         key=ENTITY_WASH_TIMES,
-        name="每月洗衣次數",
+        name="當月洗衣次數",
         icon="mdi:information-slab-symbol"
     ),
     PanasonicSensorDescription(
         key=ENTITY_WATER_USED,
-        name="每月用水量",
+        name="當月用水量",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfVolume.LITERS,
         icon="mdi:water"
@@ -1810,7 +1845,8 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_REMOTE_CONTROL,
-        name="遙控",
+        name="遠端遙控",
+        device_class=SensorDeviceClass.ENUM,
         icon='mdi:cog'
     ),
     PanasonicSensorDescription(
@@ -2079,13 +2115,13 @@ LIGHT_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
 WASHING_MACHINE_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
     PanasonicSwitchDescription(
         key=WASHING_MACHINE_ENABLE,
-        name="暫停／開始",
+        name="開始洗衣",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:play-pause'
     ),
     PanasonicSwitchDescription(
         key=WASHING_MACHINE_WARM_WATER,
-        name="溫水",
+        name="溫水設定",
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:heat-wave'
     )

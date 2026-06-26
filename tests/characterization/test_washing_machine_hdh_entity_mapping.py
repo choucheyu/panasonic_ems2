@@ -8,23 +8,27 @@ The user's NA-V160HDH observations showed:
   official app toggle was turned off while a pending program remained.
 * 0x61 stayed 65535 while the official app delay-airing hour changed, so it
   must not be exposed as a writable 延後晾衣時間設定 control.
-* 0x58 tracks the active completion-reservation countdown in minutes.
+* 0x58 tracks the active completion/finish estimate in minutes.
 * 0x76 and 0x77 track detergent and softener ml settings respectively.
 """
 
 from __future__ import annotations
 
 import ast
+from types import SimpleNamespace
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 
-from tests.helpers.source_parsing import load_constant_assignments
+from tests.helpers.source_parsing import load_constant_assignments, load_method_function
 from tests.p0_known_bugs.test_climate_writable_descriptions_have_set_mappings import (
     _description_keys,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
 CONST_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "const.py"
+CLOUD_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "cloud.py"
+SENSOR_PATH = ROOT / "custom_components" / "panasonic_ems2" / "sensor.py"
 
 
 def _constants() -> dict[str, object]:
@@ -109,7 +113,7 @@ def test_observed_reservation_hour_is_read_only_sensor_not_writable_select() -> 
     assert const["WASHING_MACHINE_TIMER"] not in select_keys
     assert const["WASHING_MACHINE_TIMER"] not in set_commands
     reservation_hour = sensor_descriptions[cast(str, const["WASHING_MACHINE_TIMER"])]
-    assert reservation_hour["name"] == "預約設定時間"
+    assert reservation_hour["name"] == "預約時間設定"
     assert reservation_hour["native_unit_of_measurement"] == "UnitOfTime.HOURS"
 
 
@@ -161,6 +165,7 @@ def test_hdh_observation_only_keys_are_supplemental_not_main_polling() -> None:
 
     expected_supplemental = [
         const["WASHING_MACHINE_TIMER_REMAINING_TIME"],
+        const["WASHING_MACHINE_ENERGY"],
         const["WASHING_MACHINE_REMOTE_CONTROL"],
         const["WASHING_MACHINE_DETERGENT_AMOUNT"],
         const["WASHING_MACHINE_SOFTENER_AMOUNT"],
@@ -168,6 +173,32 @@ def test_hdh_observation_only_keys_are_supplemental_not_main_polling() -> None:
 
     assert supplemental == expected_supplemental
     assert set(supplemental).isdisjoint(washer_commands)
+
+
+def test_hdh_supplemental_display_keys_include_monthly_energy_and_update_status() -> None:
+    """Display-only supplemental keys include UserGetInfo/UpdateCheck values without DeviceGetInfo polling."""
+    const = _constants()
+    washer_type = str(const["DEVICE_TYPE_WASHING_MACHINE"])
+    device_get_info_supplemental = cast(
+        dict[str, dict[str, list[str]]],
+        const["SUPPLEMENTAL_COMMANDS"],
+    )[washer_type]["HDH"]
+
+    display_supplemental = const["WASHING_MACHINE_HDH_SUPPLEMENTAL_DISPLAY_KEYS"]
+
+    assert display_supplemental == [
+        const["WASHING_MACHINE_TIMER_REMAINING_TIME"],
+        const["WASHING_MACHINE_ENERGY"],
+        const["WASHING_MACHINE_REMOTE_CONTROL"],
+        const["WASHING_MACHINE_DETERGENT_AMOUNT"],
+        const["WASHING_MACHINE_SOFTENER_AMOUNT"],
+        const["ENTITY_WATER_USED"],
+        const["ENTITY_WASH_TIMES"],
+        const["ENTITY_UPDATE"],
+    ]
+    assert const["ENTITY_WATER_USED"] not in device_get_info_supplemental
+    assert const["ENTITY_WASH_TIMES"] not in device_get_info_supplemental
+    assert const["ENTITY_UPDATE"] not in device_get_info_supplemental
 
 
 def test_uncertain_hdh_keys_stay_commented_with_traditional_chinese_rationale() -> None:
@@ -217,12 +248,233 @@ def test_hdh_remote_commandlist_keys_have_readable_entities() -> None:
     assert set(_hdh_main_polling_commands(const)) <= visible_keys
 
 
+def test_hdh_main_command_labels_match_remote_commandlist_chinese() -> None:
+    """Main-polling labels use the user-facing Traditional Chinese names."""
+    const = _constants()
+    sensor_descriptions = _description_metadata("WASHING_MACHINE_SENSORS")
+    switch_descriptions = _description_metadata("WASHING_MACHINE_SWITCHES")
+
+    labels = {
+        key: metadata["name"]
+        for key, metadata in {**sensor_descriptions, **switch_descriptions}.items()
+    }
+
+    expected = {
+        const["WASHING_MACHINE_ENABLE"]: "開始洗衣",
+        const["WASHING_MACHINE_REMAING_WASH_TIME"]: "洗衣行程時間",
+        const["WASHING_MACHINE_TIMER"]: "預約時間設定",
+        const["WASHING_MACHINE_ERROR_CODE"]: "異常代碼",
+        const["WASHING_MACHINE_OPERATING_STATUS"]: "運轉情報",
+        const["WASHING_MACHINE_CURRENT_MODE"]: "目前洗衣行程",
+        const["WASHING_MACHINE_CURRENT_PROGRESS"]: "洗衣行程設定",
+        const["WASHING_MACHINE_WARM_WATER"]: "溫水設定",
+        const["WASHING_MACHINE_TIMER_REMAINING_TIME_OLD"]: "預估洗衣開始時間",
+        const["WASHING_MACHINE_60"]: "時間調整",
+        const["WASHING_MACHINE_POSTPONE_DRYING_TIME"]: "延後晾衣設定",
+        const["WASHING_MACHINE_PROGRESS_NEW"]: "行程設定",
+    }
+
+    assert {key: labels[key] for key in _hdh_main_polling_commands(const)} == expected
+
+
+def test_command_name_overrides_win_over_remote_commandlist_names() -> None:
+    """Entity names must honor local overrides even when Panasonic metadata has older names."""
+    const = _constants()
+    get_command_name = load_method_function(
+        CLOUD_PATH,
+        class_name="PanasonicSmartHome",
+        method_name="get_command_name",
+        globals_env=const,
+    )
+
+    class Client:
+        _devices_info = {
+            "GWID_TEST": {
+                "ModelType": "HDH",
+                "DeviceType": str(const["DEVICE_TYPE_WASHING_MACHINE"]),
+            }
+        }
+        _commands_info = {
+            "HDH": [
+                {
+                    "DeviceType": str(const["DEVICE_TYPE_WASHING_MACHINE"]),
+                    "CommandName": {
+                        const["WASHING_MACHINE_REMAING_WASH_TIME"]: "洗衣殘時間",
+                        const["WASHING_MACHINE_CURRENT_MODE"]: "工程訊息",
+                        const["WASHING_MACHINE_CURRENT_PROGRESS"]: "行程別訊息",
+                        const["WASHING_MACHINE_TIMER_REMAINING_TIME_OLD"]: "預約殘時間",
+                    },
+                }
+            ]
+        }
+
+    client = Client()
+
+    assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_REMAING_WASH_TIME"]) == "洗衣行程時間"
+    assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_CURRENT_MODE"]) == "目前洗衣行程"
+    assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_CURRENT_PROGRESS"]) == "洗衣行程設定"
+    assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_TIMER_REMAINING_TIME_OLD"]) == "預估洗衣開始時間"
+    assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_TIMER_REMAINING_TIME"]) == "預估洗衣完成時間"
+    assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_REMOTE_CONTROL"]) == "遠端遙控"
+
+
+def test_remote_control_value_uses_local_open_closed_mapping() -> None:
+    """0x74 raw 1/0 should render as 開啟/關閉, not as raw numbers."""
+    const = _constants()
+    sensor_descriptions = _description_metadata("WASHING_MACHINE_SENSORS")
+    remote = sensor_descriptions[cast(str, const["WASHING_MACHINE_REMOTE_CONTROL"])]
+
+    assert remote["name"] == "遠端遙控"
+    assert remote["device_class"] == "SensorDeviceClass.ENUM"
+    assert const["COMMAND_RANGE_OVERRIDES"] == {
+        str(const["DEVICE_TYPE_WASHING_MACHINE"]): {
+            const["WASHING_MACHINE_REMOTE_CONTROL"]: {
+                "關閉": 0,
+                "開啟": 1,
+            }
+        }
+    }
+
+    get_range = load_method_function(
+        CLOUD_PATH,
+        class_name="PanasonicSmartHome",
+        method_name="get_range",
+        globals_env=const,
+    )
+
+    class Client:
+        _devices_info = {
+            "GWID_TEST": {
+                "ModelType": "HDH",
+                "DeviceType": str(const["DEVICE_TYPE_WASHING_MACHINE"]),
+            }
+        }
+        _commands_info = {}
+
+    assert get_range(Client(), "GWID_TEST", const["WASHING_MACHINE_REMOTE_CONTROL"]) == {
+        "關閉": 0,
+        "開啟": 1,
+    }
+
+
 def test_reservation_countdown_sensor_uses_observed_0x58_name() -> None:
-    """0x58 tracked the active completion-reservation countdown in minutes."""
+    """0x58 tracks the washer finish estimate in minutes."""
     const = _constants()
     sensor_descriptions = _description_metadata("WASHING_MACHINE_SENSORS")
 
     countdown = sensor_descriptions[cast(str, const["WASHING_MACHINE_TIMER_REMAINING_TIME"])]
 
-    assert countdown["name"] == "預約完成剩餘時間"
-    assert countdown["native_unit_of_measurement"] == "UnitOfTime.MINUTES"
+    assert countdown["name"] == "預估洗衣完成時間"
+
+
+def test_monthly_user_info_labels_use_current_month_wording() -> None:
+    """0xA2/0xA3 are current-month UserGetInfo values, not generic monthly labels."""
+    const = _constants()
+    sensor_descriptions = _description_metadata("WASHING_MACHINE_SENSORS")
+
+    water = sensor_descriptions[cast(str, const["ENTITY_WATER_USED"])]
+    wash_times = sensor_descriptions[cast(str, const["ENTITY_WASH_TIMES"])]
+
+    assert water["name"] == "當月用水量"
+    assert wash_times["name"] == "當月洗衣次數"
+
+
+def test_time_countdown_keys_render_as_clock_time_without_minute_units() -> None:
+    """0x13/0x15/0x58 normal minute values should display as actual HH:MM times."""
+    const = _constants()
+    sensor_descriptions = _description_metadata("WASHING_MACHINE_SENSORS")
+    time_keys = [
+        const["WASHING_MACHINE_REMAING_WASH_TIME"],
+        const["WASHING_MACHINE_TIMER_REMAINING_TIME_OLD"],
+        const["WASHING_MACHINE_TIMER_REMAINING_TIME"],
+    ]
+
+    for key in time_keys:
+        description = sensor_descriptions[cast(str, key)]
+        assert "native_unit_of_measurement" not in description
+        assert "state_class" not in description
+
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 6, 26, 10, 58)
+
+    sensor_device_class = SimpleNamespace(
+        ENUM="SensorDeviceClass.ENUM",
+        TEMPERATURE="SensorDeviceClass.TEMPERATURE",
+        HUMIDITY="SensorDeviceClass.HUMIDITY",
+        ENERGY="SensorDeviceClass.ENERGY",
+    )
+    native_value = load_method_function(
+        SENSOR_PATH,
+        class_name="PanasonicSensor",
+        method_name="native_value",
+        globals_env={
+            **const,
+            "SensorDeviceClass": sensor_device_class,
+            "datetime": FixedDateTime,
+            "timedelta": timedelta,
+        },
+    )
+
+    class Sensor:
+        coordinator = SimpleNamespace(data={})
+        info = {"DeviceType": const["DEVICE_TYPE_WASHING_MACHINE"]}
+
+        def __init__(self, key: str, value: int) -> None:
+            self.key = key
+            self.value = value
+            self.entity_description = SimpleNamespace(key=key, device_class=None)
+
+        def get_status(self, _data: object) -> dict[str, int]:
+            return {self.key: self.value}
+
+    for key in time_keys:
+        assert native_value(Sensor(cast(str, key), 35)) == "11:33"
+        assert native_value(Sensor(cast(str, key), 64933)) is None
+
+
+def test_finish_estimate_suppresses_panasonic_sentinel_values() -> None:
+    """0x58 returned 64933 once washing started; do not show it as real minutes."""
+    const = _constants()
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 6, 26, 10, 58)
+
+    sensor_device_class = SimpleNamespace(
+        ENUM="SensorDeviceClass.ENUM",
+        TEMPERATURE="SensorDeviceClass.TEMPERATURE",
+        HUMIDITY="SensorDeviceClass.HUMIDITY",
+        ENERGY="SensorDeviceClass.ENERGY",
+    )
+    native_value = load_method_function(
+        SENSOR_PATH,
+        class_name="PanasonicSensor",
+        method_name="native_value",
+        globals_env={
+            **const,
+            "SensorDeviceClass": sensor_device_class,
+            "datetime": FixedDateTime,
+            "timedelta": timedelta,
+        },
+    )
+
+    class Sensor:
+        entity_description = SimpleNamespace(
+            key=const["WASHING_MACHINE_TIMER_REMAINING_TIME"],
+            device_class=None,
+        )
+        coordinator = SimpleNamespace(data={})
+        info = {"DeviceType": const["DEVICE_TYPE_WASHING_MACHINE"]}
+
+        def __init__(self, value: int) -> None:
+            self.value = value
+
+        def get_status(self, _data: object) -> dict[str, int]:
+            key = cast(str, const["WASHING_MACHINE_TIMER_REMAINING_TIME"])
+            return {key: self.value}
+
+    assert native_value(Sensor(64933)) is None
+    assert native_value(Sensor(65535)) is None
+    assert native_value(Sensor(123)) == "13:01"

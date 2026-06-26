@@ -1,6 +1,6 @@
 """ Panasonic Smart Home Sensor"""
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -16,6 +16,7 @@ from .core.const import (
     DEVICE_TYPE_FRIDGE,
     DEVICE_TYPE_WASHING_MACHINE,
     DEVICE_TYPE_WEIGHT_PLATE,
+    WASHING_MACHINE_CLOCK_TIME_KEYS,
     WASHING_MACHINE_SENSORS,
     WEIGHT_PLATE_SENSORS,
     PanasonicSensorDescription
@@ -126,6 +127,19 @@ class PanasonicSensor(PanasonicBaseEntity, SensorEntity):
                 return get_key_from_dict(rng, int(value))
             return value
         value = status.get(self.entity_description.key, None)
+        if self.entity_description.key in WASHING_MACHINE_CLOCK_TIME_KEYS:
+            if value is None:
+                return None
+            try:
+                raw_value = int(value)
+            except (TypeError, ValueError):
+                return value
+            # 64933/65535-class values are Panasonic sentinel values seen once the washer starts;
+            # do not show them as real clock-time estimates.
+            if raw_value >= 60000 or raw_value < 0:
+                return None
+            return (datetime.now() + timedelta(minutes=raw_value)).strftime("%H:%M")
+
         device_type = int(self.info.get("DeviceType"))
         if device_type != DEVICE_TYPE_FRIDGE:
             if self.entity_description.device_class == SensorDeviceClass.TEMPERATURE:

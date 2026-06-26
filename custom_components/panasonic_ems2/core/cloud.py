@@ -31,6 +31,8 @@ from .const import (
     EXTRA_COMMANDS,
     EXCESS_COMMANDS,
     SUPPLEMENTAL_COMMANDS,
+    COMMAND_NAME_OVERRIDES,
+    COMMAND_RANGE_OVERRIDES,
     CLIMATE_RANGE_FAMILY,
     MODEL_JP_TYPES,
     CLIMATE_PM25,
@@ -920,6 +922,10 @@ class PanasonicSmartHome(object):
 
         model_type = self._devices_info[device_gwid]["ModelType"]
         device_type = self._devices_info[device_gwid]["DeviceType"]
+        override = COMMAND_NAME_OVERRIDES.get(str(device_type), {}).get(command, None)
+        if override is not None:
+            return override
+
         if model_type not in self._commands_info:
             return None
         cmds_list = self._commands_info[model_type]
@@ -945,6 +951,9 @@ class PanasonicSmartHome(object):
 
         model_type = self._devices_info[device_gwid]["ModelType"]
         device_type = self._devices_info[device_gwid]["DeviceType"]
+        override = COMMAND_RANGE_OVERRIDES.get(str(device_type), {}).get(command, None)
+        if override is not None:
+            return override
 
         candidates = [model_type]
         alias = CLIMATE_RANGE_FAMILY.get(model_type, {}).get(command)
