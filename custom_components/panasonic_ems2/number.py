@@ -6,7 +6,11 @@ from homeassistant.components.number import (
     NumberEntity
 )
 
-from .core.base import PanasonicBaseEntity
+from .core.base import (
+    PanasonicDescribedEntity,
+    PanasonicRangeMixin,
+    PanasonicWritableEntityMixin,
+)
 from .core.const import (
     DOMAIN,
     DATA_CLIENT,
@@ -52,15 +56,12 @@ async def async_setup_entry(hass, entry, async_add_entities) -> bool:
     return True
 
 
-def get_key_from_dict(dictionary, value):
-    """ get key from dictionary by value"""
-    for key, val in dictionary.items():
-        if value == val:
-            return key
-    return None
-
-
-class PanasonicNumber(PanasonicBaseEntity, NumberEntity):
+class PanasonicNumber(
+    PanasonicRangeMixin,
+    PanasonicWritableEntityMixin,
+    PanasonicDescribedEntity,
+    NumberEntity,
+):
     """Implementation of a Panasonic number."""
     entity_description: PanasonicNumberDescription
 
@@ -73,40 +74,18 @@ class PanasonicNumber(PanasonicBaseEntity, NumberEntity):
         info,
         description
     ):
-        super().__init__(coordinator, device_gwid, device_id, client, info)
-        self.entity_description = description
-        self._range = client.get_range(device_gwid, self.entity_description.key)
+        super().__init__(coordinator, device_gwid, device_id, client, info, description)
+        range_values = list(self._get_options_range().values())
 
         self._attr_native_min_value = 0
         self._attr_native_max_value = 1
 
-        if self._range:
-            self._attr_native_min_value = list(self._range.values())[0]
-            self._attr_native_max_value = list(self._range.values())[-1]
+        if range_values:
+            self._attr_native_min_value = min(range_values)
+            self._attr_native_max_value = max(range_values)
         else:
             self._attr_native_min_value = self.entity_description.native_min_value
             self._attr_native_max_value = self.entity_description.native_max_value
-
-    @property
-    def name(self):
-        """Return the name of the number."""
-        name = self.client.get_command_name(self.device_gwid, self.entity_description.key)
-        if name is not None:
-            return "{} {}".format(
-                self.info["NickName"], name
-            )
-        return "{} {}".format(
-            self.info["NickName"], self.entity_description.name
-        )
-
-    @property
-    def unique_id(self):
-        """Return the unique of the number."""
-        return "{}_{}_{}".format(
-            self.device_gwid,
-            self.device_id,
-            self.entity_description.key
-        )
 
     @property
     def native_value(self) -> float | None:
@@ -123,10 +102,4 @@ class PanasonicNumber(PanasonicBaseEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         """Set new value."""
-        gwid = self.device_gwid
-        device_id = self.device_id
-
-        await self.client.set_device(
-            gwid, device_id, self.entity_description.key, int(value))
-        await self.client.update_device(gwid, device_id)
-        self.async_write_ha_state()
+        await self.async_set_device_value(value)

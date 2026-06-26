@@ -18,6 +18,7 @@ from tests.helpers.source_parsing import load_constant_assignments, load_method_
 
 ROOT = Path(__file__).resolve().parents[2]
 CONST = ROOT / "custom_components/panasonic_ems2/core/const.py"
+BASE = ROOT / "custom_components/panasonic_ems2/core/base.py"
 NUMBER = ROOT / "custom_components/panasonic_ems2/number.py"
 
 
@@ -163,6 +164,13 @@ def test_setting_timer_number_sends_requested_integer_value_then_refreshes_devic
     const = _constants()
     key = const["CLIMATE_TIMER_OFF"]
     number = _NumberEntity(key=key, raw_value=65535)
+    async_set_device_value = load_method_function(
+        BASE,
+        class_name="PanasonicWritableEntityMixin",
+        method_name="async_set_device_value",
+        globals_env={"asyncio": asyncio},
+    )
+    number.async_set_device_value = async_set_device_value.__get__(number, _NumberEntity)
 
     asyncio.run(async_set_native_value(number, 10.0))
 

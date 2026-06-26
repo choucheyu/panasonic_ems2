@@ -7,7 +7,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity
 )
 
-from .core.base import PanasonicBaseEntity
+from .core.base import PanasonicDescribedEntity
 from .core.const import (
     DOMAIN,
     DATA_CLIENT,
@@ -51,50 +51,9 @@ async def async_setup_entry(hass, entry, async_add_entities) -> bool:
 
     return True
 
-def get_key_from_dict(dictionary, value):
-    """ get key from dictionary by value"""
-    for key, val in dictionary.items():
-        if value == val:
-            return key
-    return None
-
-
-class PanasonicBinarySensor(PanasonicBaseEntity, BinarySensorEntity):
+class PanasonicBinarySensor(PanasonicDescribedEntity, BinarySensorEntity):
     """Implementation of a Panasonic binary sensor."""
     entity_description: PanasonicBinarySensorDescription
-
-    def __init__(
-        self,
-        coordinator,
-        device_gwid,
-        device_id,
-        client,
-        info,
-        description
-    ):
-        super().__init__(coordinator, device_gwid, device_id, client, info)
-        self.entity_description = description
-
-    @property
-    def name(self):
-        """Return the name of the binary sensor."""
-        name = self.client.get_command_name(self.device_gwid, self.entity_description.key)
-        if name is not None:
-            return "{} {}".format(
-                self.info["NickName"], name
-            )
-        return "{} {}".format(
-            self.info["NickName"], self.entity_description.name
-        )
-
-    @property
-    def unique_id(self):
-        """Return the unique of the sensor."""
-        return "{}_{}_{}".format(
-            self.device_gwid,
-            self.device_id,
-            self.entity_description.key
-        )
 
     @property
     def is_on(self) -> bool:

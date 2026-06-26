@@ -1,12 +1,11 @@
 """ Panasonic Smart Home Switch"""
 import logging
-import asyncio
 from datetime import timedelta
 
 from homeassistant.components.switch import (
     SwitchEntity
 )
-from .core.base import PanasonicBaseEntity
+from .core.base import PanasonicDescribedEntity, PanasonicWritableEntityMixin
 from .core.const import (
     DOMAIN,
     DATA_CLIENT,
@@ -64,7 +63,7 @@ async def async_setup_entry(hass, entry, async_add_entities) -> bool:
     return True
 
 
-class PanasonicSwitch(PanasonicBaseEntity, SwitchEntity):
+class PanasonicSwitch(PanasonicWritableEntityMixin, PanasonicDescribedEntity, SwitchEntity):
     """Implementation of a Panasonic switch."""
     entity_description: PanasonicSwitchDescription
 
@@ -78,50 +77,20 @@ class PanasonicSwitch(PanasonicBaseEntity, SwitchEntity):
             return 0 if is_on else 1
         return 1 if is_on else 0
 
-    def __init__(
-        self,
-        coordinator,
-        device_gwid,
-        device_id,
-        client,
-        info,
-        description
-    ):
-        super().__init__(coordinator, device_gwid, device_id, client, info)
-        self.entity_description = description
-
-    @property
-    def name(self):
-        """Return the name of the switch."""
+    def _entity_name_suffix(self) -> str:
+        """Return the switch-specific name suffix."""
         name = self.client.get_command_name(self.device_gwid, self.entity_description.key)
-
         if name is not None:
             # hard code
             if "nanoe" in name:
-                return "{} {}".format(
-                    self.info["NickName"], self.entity_description.name
-                )
+                return self.entity_description.name
             device_name = ""
             for dev in self.info.get("Devices", {}):
                 if self.device_id == dev.get("DeviceID", 0):
                     device_name = dev.get("Name", "")
                     break
-
-            return "{} {}{}".format(
-                self.info["NickName"], device_name, name
-            )
-        return "{} {}".format(
-            self.info["NickName"], self.entity_description.name
-        )
-
-    @property
-    def unique_id(self):
-        """Return the unique of the switch."""
-        return "{}_{}_{}".format(
-            self.device_gwid,
-            self.device_id,
-            self.entity_description.key
-        )
+            return "{}{}".format(device_name, name)
+        return self.entity_description.name
 
     @property
     def is_on(self) -> bool | None:
@@ -148,17 +117,7 @@ class PanasonicSwitch(PanasonicBaseEntity, SwitchEntity):
         return self._raw_value_to_is_on(int(status.get(self.entity_description.key, 0)))
 
     async def async_turn_on(self) -> None:
-        gwid = self.device_gwid
-        device_id = self.device_id
-        await self.client.set_device(gwid, device_id, self.entity_description.key, self._is_on_to_raw_value(True))
-        await asyncio.sleep(1)
-        await self.client.update_device(gwid, device_id)
-        self.async_write_ha_state()
+        await self.async_set_device_value(self._is_on_to_raw_value(True), refresh_delay=1)
 
     async def async_turn_off(self) -> None:
-        gwid = self.device_gwid
-        device_id = self.device_id
-        await self.client.set_device(gwid, device_id, self.entity_description.key, self._is_on_to_raw_value(False))
-        await asyncio.sleep(1)
-        await self.client.update_device(gwid, device_id)
-        self.async_write_ha_state()
+        await self.async_set_device_value(self._is_on_to_raw_value(False), refresh_delay=1)
