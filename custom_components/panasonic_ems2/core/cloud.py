@@ -24,6 +24,7 @@ from .exceptions import (
 )
 from . import apis
 from .command_metadata import refactor_command_metadata
+from .user_info_series import parse_user_info_series
 from .const import (
     APP_TOKEN,
     DOMAIN,
@@ -680,22 +681,6 @@ class PanasonicSmartHome(object):
                 unit_of_measurement=unit,
             )
 
-        def as_number(value):
-            try:
-                return float(value)
-            except (TypeError, ValueError):
-                return None
-
-        def as_number_list(values):
-            if not isinstance(values, list):
-                return []
-            parsed = []
-            for value in values:
-                number = as_number(value)
-                if number is not None:
-                    parsed.append(number)
-            return parsed
-
         def build_statistics(values):
             statistics = []
             running_sum = 0.0
@@ -711,61 +696,36 @@ class PanasonicSmartHome(object):
             return statistics
 
         rows = []
-        for gwinfo in response.get("GwList", []):
-            gwid = gwinfo.get("GwID") or gwinfo.get("GWID")
-            if not gwid or gwid not in self._devices_info:
-                continue
-            device_type = self._devices_info[gwid].get("DeviceType")
-            metrics = []
-            if info_type == "Power":
-                metrics.append(
-                    {
-                        "suffix": "energy",
-                        "name": "用電量",
-                        "unit": UnitOfEnergy.KILO_WATT_HOUR,
-                        "unit_class": EnergyConverter.UNIT_CLASS,
-                        "values": as_number_list(gwinfo.get("kwh", [])),
-                    }
-                )
-            elif info_type == "Other" and device_type == str(DEVICE_TYPE_WASHING_MACHINE):
-                metrics.extend(
-                    [
-                        {
-                            "suffix": "water",
-                            "name": "用水量",
-                            "unit": UnitOfVolume.LITERS,
-                            "unit_class": VolumeConverter.UNIT_CLASS,
-                            "values": as_number_list(gwinfo.get("WM_WaterUsed", [])),
-                        },
-                        {
-                            "suffix": "wash_count",
-                            "name": "洗衣次數",
-                            "unit": "次",
-                            "unit_class": None,
-                            "values": as_number_list(gwinfo.get("WM_WashTime", [])),
-                        },
-                    ]
-                )
+        grain = "month" if labels and len(labels[0]) == 7 else "day"
+        unit_class_map = {
+            "energy": EnergyConverter.UNIT_CLASS,
+            "volume": VolumeConverter.UNIT_CLASS,
+        }
+        unit_map = {
+            "kWh": UnitOfEnergy.KILO_WATT_HOUR,
+            "L": UnitOfVolume.LITERS,
+        }
 
-            grain = "month" if labels and len(labels[0]) == 7 else "day"
-            for metric in metrics:
-                values = metric["values"]
-                if not values:
-                    continue
-                metadata = statistic_metadata(
-                    gwid,
-                    f"{metric['suffix']}_{grain}",
-                    metric["name"],
-                    metric["unit"],
-                    metric["unit_class"],
-                )
-                rows.append(
-                    {
-                        "metadata": metadata,
-                        "statistics": build_statistics(values),
-                        "range_key": range_key,
-                    }
-                )
+        for metric in parse_user_info_series(
+            info_type,
+            response,
+            self._devices_info,
+            washing_machine_device_type=str(DEVICE_TYPE_WASHING_MACHINE),
+        ):
+            metadata = statistic_metadata(
+                metric["gwid"],
+                f"{metric['suffix']}_{grain}",
+                metric["name"],
+                unit_map.get(metric["unit"], metric["unit"]),
+                unit_class_map.get(metric["unit_class"], metric["unit_class"]),
+            )
+            rows.append(
+                {
+                    "metadata": metadata,
+                    "statistics": build_statistics(metric["values"]),
+                    "range_key": range_key,
+                }
+            )
         return rows
 
     async def _update_user_info_statistics(self, header):

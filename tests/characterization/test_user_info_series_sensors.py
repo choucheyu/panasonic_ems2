@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import datetime as dt
+import importlib.util
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,7 @@ from tests.helpers.source_parsing import (
 ROOT = Path(__file__).resolve().parents[2]
 CONST_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "const.py"
 CLOUD_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "cloud.py"
+USER_INFO_SERIES_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "user_info_series.py"
 
 
 class FakeStatisticData(dict):
@@ -83,6 +85,10 @@ def _load_tuple_call_attributes(tuple_name: str) -> dict[str, dict[str, Any]]:
 
 def _load_cloud_method(method_name: str):
     constants = load_constant_assignments(CONST_PATH)
+    spec = importlib.util.spec_from_file_location("panasonic_user_info_series", USER_INFO_SERIES_PATH)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
     return constants, load_method_function(
         CLOUD_PATH,
         class_name="PanasonicSmartHome",
@@ -100,6 +106,7 @@ def _load_cloud_method(method_name: str):
             "UnitOfEnergy": type("UnitOfEnergy", (), {"KILO_WATT_HOUR": "kWh"}),
             "UnitOfVolume": type("UnitOfVolume", (), {"LITERS": "L"}),
             "DOMAIN": "panasonic_ems2",
+            "parse_user_info_series": module.parse_user_info_series,
         },
     )
 
