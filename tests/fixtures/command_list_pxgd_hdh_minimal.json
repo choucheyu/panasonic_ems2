@@ -1,0 +1,66 @@
+{
+  "PXGD": [
+    {
+      "DeviceType": 1,
+      "ModelType": "PXGD",
+      "list": [
+        {
+          "CommandType": "0X01",
+          "CommandName": "運轉模式",
+          "ParameterType": "enum",
+          "Parameters": [
+            ["Cool", 1],
+            ["Heat", 4]
+          ]
+        },
+        {
+          "CommandType": "0x02",
+          "CommandName": "風量",
+          "ParameterType": "rangeA",
+          "Parameters": [
+            ["Min", 1],
+            ["Max", 5]
+          ]
+        },
+        {
+          "CommandType": "0x03",
+          "CommandName": "設定溫度",
+          "ParameterType": "range",
+          "Parameters": [
+            ["Min", 16],
+            ["Max", 30]
+          ]
+        }
+      ]
+    }
+  ],
+  "HDH": [
+    {
+      "DeviceType": 3,
+      "ModelType": "HDH",
+      "GWID": "GWID_HDH_COMMAND_METADATA",
+      "Auth": "AUTH_REDACTED",
+      "ModelID": "MODELID_HDH_COMMAND_METADATA",
+      "list": [
+        {
+          "CommandType": "0x50",
+          "CommandName": "運轉情報",
+          "ParameterType": "enum",
+          "Parameters": [
+            ["Standby", 1],
+            ["Running", 2]
+          ]
+        },
+        {
+          "CommandType": "0x15",
+          "CommandName": "預約殘時間",
+          "ParameterType": "range",
+          "Parameters": [
+            ["Min", 0],
+            ["Max", 24]
+          ]
+        }
+      ]
+    }
+  ]
+}

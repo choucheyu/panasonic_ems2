@@ -1,0 +1,41 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Unit and characterization tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest pytest-asyncio pyyaml
+
+      - name: Run pytest
+        run: python -m pytest -q
+
+      - name: Compile Python sources
+        run: python -m compileall -q custom_components/panasonic_ems2 scripts tests
+
+      - name: Validate JSON files
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          for path in Path('.').rglob('*.json'):
+              if '.git' in path.parts:
+                  continue
+              json.loads(path.read_text(encoding='utf-8'))
+          PY
