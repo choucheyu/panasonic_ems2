@@ -23,6 +23,7 @@ from .exceptions import (
     Ems2TooManyRequest
 )
 from . import apis
+from .command_metadata import refactor_command_metadata
 from .const import (
     APP_TOKEN,
     DOMAIN,
@@ -527,61 +528,13 @@ class PanasonicSmartHome(object):
         """
         refactor the status of information for easy use
         """
-        new = {}
-        for model_type, cmd_list in commands_list.items():
-            cmds_list = []
-            for cmds in cmd_list:
-                if "list" not in cmds:
-                    continue
-                lst = cmds["list"]
-                cmds_para = {}
-                cmds_name = {}
-                for cmd in lst:
-                    cmd_type = cmd["CommandType"].upper().replace("X", "x")
-                    parameters = {}
-                    if cmd["ParameterType"] == "enum":
-                        parameters_list = cmd["Parameters"]
-                        for para in parameters_list:
-                            parameters[para[0]] = para[1]
-                        if model_type in WASHING_MACHINE_MODELS + WASHING_MACHINE_2020_MODELS:
-                            if cmd_type == WASHING_MACHINE_OPERATING_STATUS:
-                                parameters["Off"] = 0
-                    elif "range" in cmd["ParameterType"]:
-                        parameters_list = cmd["Parameters"]
-                        max = 0
-                        min = 0
-                        for para in parameters_list:
-                            if "Min" == para[0]:
-                                min = para[1] or 0
-                            if "Max" == para[0]:
-                                max = para[1] or 1
-                            if "\u901a\u5e38" == para[0]:
-                                min = para[1] or 0
-                            if "\u6a21\u5f0f" == para[0]:
-                                max = para[1] or 1
-                        if max > 39:
-                            parameters[str(min)] = min
-                            parameters[str(max)] = max
-                        else:
-                            for i in range(min, max + 1):
-                                parameters[str(i)] = i
-                        if cmd["ParameterType"] == "rangeA":
-                            parameters["Auto"] = 0
-
-                        if model_type in WASHING_MACHINE_MODELS + WASHING_MACHINE_2020_MODELS:
-                            if cmd_type == "0x15":
-                                cmds_para[WASHING_MACHINE_TIMER_REMAINING_TIME] = parameters
-                                cmds_name[WASHING_MACHINE_TIMER_REMAINING_TIME] = cmd["CommandName"]
-
-                    cmds_para[cmd_type] = parameters
-                    cmds_name[cmd_type] = cmd["CommandName"]
-                cmds.pop("list", None)
-                cmds["DeviceType"] = str(cmds["DeviceType"])
-                cmds["CommandParameters"] = cmds_para
-                cmds["CommandName"] = cmds_name
-                cmds_list.append(cmds)
-            new[model_type] = cmds_list
-        self._commands_info = new
+        self._commands_info = refactor_command_metadata(
+            commands_list,
+            washing_machine_models=WASHING_MACHINE_MODELS,
+            washing_machine_2020_models=WASHING_MACHINE_2020_MODELS,
+            washing_machine_operating_status=WASHING_MACHINE_OPERATING_STATUS,
+            washing_machine_timer_remaining_time=WASHING_MACHINE_TIMER_REMAINING_TIME,
+        )
 
     def _offline_info(self, device_type, model_type):
         """

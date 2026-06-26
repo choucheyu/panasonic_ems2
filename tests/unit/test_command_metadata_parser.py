@@ -8,42 +8,48 @@ CommandList fixture.
 
 from __future__ import annotations
 
-import copy
 import json
+import importlib.util
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
-from tests.helpers.source_parsing import load_constant_assignments, load_method_function
+from tests.helpers.source_parsing import load_constant_assignments
 
 ROOT = Path(__file__).resolve().parents[2]
 CONST_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "const.py"
-CLOUD_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "cloud.py"
+COMMAND_METADATA_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "command_metadata.py"
 FIXTURE = ROOT / "tests" / "fixtures" / "command_list_pxgd_hdh_minimal.json"
 
 
-class _DummyCloud:
-    _commands_info: dict[str, Any]
-
-
-def _load_parser() -> tuple[dict[str, Any], Callable[..., None]]:
+def _load_constants() -> dict[str, Any]:
     constants = load_constant_assignments(CONST_PATH)
-    method = load_method_function(
-        CLOUD_PATH,
-        class_name="PanasonicSmartHome",
-        method_name="_refactor_cmds_paras",
-        globals_env=constants,
-    )
-    return constants, method
+    return constants
+
+
+def _load_refactor_command_metadata():
+    spec = importlib.util.spec_from_file_location("panasonic_command_metadata", COMMAND_METADATA_PATH)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.refactor_command_metadata
 
 
 def _parse_fixture() -> tuple[dict[str, Any], dict[str, Any]]:
-    constants, parser = _load_parser()
+    constants = _load_constants()
+    refactor_command_metadata = _load_refactor_command_metadata()
     commands = json.loads(FIXTURE.read_text(encoding="utf-8"))
-    cloud = _DummyCloud()
+    original = json.loads(FIXTURE.read_text(encoding="utf-8"))
 
-    parser(cloud, copy.deepcopy(commands))
+    parsed = refactor_command_metadata(
+        commands,
+        washing_machine_models=constants["WASHING_MACHINE_MODELS"],
+        washing_machine_2020_models=constants["WASHING_MACHINE_2020_MODELS"],
+        washing_machine_operating_status=constants["WASHING_MACHINE_OPERATING_STATUS"],
+        washing_machine_timer_remaining_time=constants["WASHING_MACHINE_TIMER_REMAINING_TIME"],
+    )
 
-    return constants, cloud._commands_info
+    assert commands == original, "parser must not mutate raw CommandList metadata"
+    return constants, parsed
 
 
 def test_command_metadata_parser_normalizes_command_type_names_and_device_type() -> None:
