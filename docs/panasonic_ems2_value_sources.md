@@ -343,14 +343,14 @@ _（空）_
 | Key | 對應常數名稱 | HA 平台 | 顯示名稱 | 顯示/換算 |
 |---|---|---|---|---|
 | `0x01` | `WASHING_MACHINE_ENABLE` | switch | 開始洗衣 |  |
-| `0x13` | `WASHING_MACHINE_REMAING_WASH_TIME` | sensor | 洗衣行程時間 | 正常分鐘值顯示為目前時間 + 分鐘數的 `HH:MM`。 |
+| `0x13` | `WASHING_MACHINE_REMAING_WASH_TIME` | sensor | 預估洗衣完成時間 | 僅在 `0x50=2` 動作中時，正常分鐘值顯示為目前時間 + 分鐘數的 `HH:MM`；預約中/待機/終了顯示 unknown。 |
 | `0x14` | `WASHING_MACHINE_TIMER` | sensor | 預約時間設定 |  |
 | `0x19` | `WASHING_MACHINE_ERROR_CODE` | sensor | 異常代碼 |  |
 | `0x50` | `WASHING_MACHINE_OPERATING_STATUS` | sensor | 運轉情報 |  |
 | `0x54` | `WASHING_MACHINE_CURRENT_MODE` | sensor | 目前洗衣行程 |  |
 | `0x55` | `WASHING_MACHINE_CURRENT_PROGRESS` | sensor | 洗衣行程設定 |  |
 | `0x69` | `WASHING_MACHINE_WARM_WATER` | switch | 溫水設定 |  |
-| `0x15` | `WASHING_MACHINE_TIMER_REMAINING_TIME_OLD` | sensor | 預估洗衣開始時間 | 正常分鐘值顯示為目前時間 + 分鐘數的 `HH:MM`。 |
+| `0x15` | `WASHING_MACHINE_TIMER_REMAINING_TIME_OLD` | sensor | 預約洗衣開始時間 | 僅在 `0x50=3/4` 預約中時，正常分鐘值顯示為目前時間 + 分鐘數的 `HH:MM`；運轉中/待機/終了顯示 unknown。 |
 | `0x60` | `WASHING_MACHINE_60` | sensor | 時間調整 |  |
 | `0x61` | `WASHING_MACHINE_61, WASHING_MACHINE_POSTPONE_DRYING_TIME` | sensor | 延後晾衣設定 |  |
 | `0x64` | `WASHING_MACHINE_PROGRESS_NEW` | sensor | 行程設定 |  |
@@ -362,7 +362,7 @@ _（空）_
 
 | Key | 對應常數名稱 | HA 平台 | 顯示名稱 | 顯示/換算 |
 |---|---|---|---|---|
-| `0x58` | `WASHING_MACHINE_TIMER_REMAINING_TIME` | sensor | 預估洗衣完成時間 | `>=60000` sentinel 顯示 None；正常分鐘值顯示為目前時間 + 分鐘數的 `HH:MM`。 |
+| `0x58` | `WASHING_MACHINE_TIMER_REMAINING_TIME` | sensor | 預約洗衣完成時間 | 僅在 `0x50=3/4` 預約中時，正常分鐘值顯示為目前時間 + 分鐘數的 `HH:MM`；運轉中/待機/終了或 `>=60000` sentinel 顯示 unknown。 |
 | `0x1E` | `WASHING_MACHINE_ENERGY` | sensor | 用電量 | sensor 顯示層 `raw × 0.1`，單位 kWh；小於 1 回 None。 |
 | `0x74` | `WASHING_MACHINE_REMOTE_CONTROL` | sensor | 遠端遙控 | 本地 enum override：`0=關閉`, `1=開啟`。 |
 | `0x76` | `WASHING_MACHINE_DETERGENT_AMOUNT` | sensor | 洗劑投入設定 |  |
@@ -375,7 +375,7 @@ _（空）_
 
 | Key | 對應常數名稱 | HA 平台 | 顯示名稱 | 顯示/換算 |
 |---|---|---|---|---|
-| `0x58` | `WASHING_MACHINE_TIMER_REMAINING_TIME` | sensor | 預估洗衣完成時間 | `>=60000` sentinel 顯示 None；正常分鐘值顯示為目前時間 + 分鐘數的 `HH:MM`。 |
+| `0x58` | `WASHING_MACHINE_TIMER_REMAINING_TIME` | sensor | 預約洗衣完成時間 | 僅在 `0x50=3/4` 預約中時，正常分鐘值顯示為目前時間 + 分鐘數的 `HH:MM`；運轉中/待機/終了或 `>=60000` sentinel 顯示 unknown。 |
 | `0x1E` | `WASHING_MACHINE_ENERGY` | sensor | 用電量 | sensor 顯示層 `raw × 0.1`，單位 kWh；小於 1 回 None。 |
 | `0x74` | `WASHING_MACHINE_REMOTE_CONTROL` | sensor | 遠端遙控 | 本地 enum override：`0=關閉`, `1=開啟`。 |
 | `0x76` | `WASHING_MACHINE_DETERGENT_AMOUNT` | sensor | 洗劑投入設定 |  |
@@ -385,13 +385,27 @@ _（空）_
 | `0xB0` | `ENTITY_UPDATE` | binary_sensor | 版本更新 | UpdateCheck boolean，binary_sensor 顯示 on/off。 |
 
 
+### HDH model-specific selects
+
+這些是 HDH 遠端 `CommandList` 有宣告的設定 key；新版只對 `ModelType=HDH` 建立 select，不套用到尚未確認的 DDH/DW/MDH。
+
+| Key | 常數名稱 | Select 名稱 | 備註 |
+|---|---|---|---|
+| `0x14` | `WASHING_MACHINE_TIMER` | 預約時間設定 | HDH CommandList-backed writable setting。 |
+| `0x60` | `WASHING_MACHINE_60` | 時間調整 | HDH CommandList-backed writable setting。 |
+| `0x61` | `WASHING_MACHINE_POSTPONE_DRYING_TIME` | 延後晾衣設定 | 正式設定 key；不要用 `0x56` 代表設定。 |
+| `0x64` | `WASHING_MACHINE_PROGRESS_NEW` | 行程設定 | HDH CommandList-backed course setting。 |
+
+舊版 HA entity registry 若殘留 restored/unavailable selects，應刪除：`0x02` 行程、`0x14` 舊預約時間設定、`0x56` 舊延後晾衣設定。新版不再用 `0x02` 或 `0x56` 作為 washer select。
+
+
 ### HDH 名稱與值 override
 
 | 類型 | Key | Override |
 |---|---|---|
-| 名稱 | `0x13` | 洗衣行程時間 |
-| 名稱 | `0x58` | 預估洗衣完成時間 |
-| 名稱 | `0x15` | 預估洗衣開始時間 |
+| 名稱 | `0x13` | 預估洗衣完成時間 |
+| 名稱 | `0x58` | 預約洗衣完成時間 |
+| 名稱 | `0x15` | 預約洗衣開始時間 |
 | 名稱 | `0x54` | 目前洗衣行程 |
 | 名稱 | `0x55` | 洗衣行程設定 |
 | 名稱 | `0x74` | 遠端遙控 |
@@ -401,16 +415,78 @@ _（空）_
 
 | Key / 類型 | 來源 | 顯示處理 |
 |---|---|---|
-| `SensorDeviceClass.ENERGY`，例如 washer `0x1E` | `DeviceGetInfo` | `sensor.py` 顯示層會做 `raw × 0.1`，單位 kWh；小於 1 回 None。 |
-| `0x13` 洗衣行程時間 | `DeviceGetInfo` main | 正常分鐘值顯示為目前時間 + 分鐘數的 `HH:MM`；`>=60000` 顯示 None/unknown。 |
-| `0x15` 預估洗衣開始時間 | `DeviceGetInfo` main | 正常分鐘值顯示為目前時間 + 分鐘數的 `HH:MM`；`>=60000` 顯示 None/unknown。 |
-| `0x58` 預估洗衣完成時間 | `DeviceGetInfo` supplemental | `>=60000` 視為 Panasonic sentinel，顯示 None/unknown；正常分鐘值顯示為目前時間 + 分鐘數的 `HH:MM`。 |
+| `SensorDeviceClass.ENERGY`，例如 washer `0x1E` | `DeviceGetInfo` | 既有即時/累積 energy sensor 顯示名稱為「累積用電量」；`sensor.py` 顯示層會做 `raw × 0.1`，單位 kWh；小於 1 回 None。 |
+| `0x13` 預估洗衣完成時間 | `DeviceGetInfo` main | 僅在 `0x50=2` 動作中時顯示目前時間 + 分鐘數的 `HH:MM`；預約中/待機/終了或 `>=60000` 顯示 unknown。 |
+| `0x15` 預約洗衣開始時間 | `DeviceGetInfo` main | 僅在 `0x50=3/4` 預約中時顯示目前時間 + 分鐘數的 `HH:MM`；運轉中/待機/終了或 `>=60000` 顯示 unknown。 |
+| `0x58` 預約洗衣完成時間 | `DeviceGetInfo` supplemental | 僅在 `0x50=3/4` 預約中時顯示目前時間 + 分鐘數的 `HH:MM`；運轉中/待機/終了或 `>=60000` sentinel 顯示 unknown。 |
 | `0x74` 遠端遙控 | `DeviceGetInfo` supplemental | 本地 enum override：`0=關閉`, `1=開啟`。 |
-| `0xA2` 當月用水量 | `UserGetInfo` / `WM_WaterUsed_Total` | raw 直接顯示，單位 L。 |
-| `0xA3` 當月洗衣次數 | `UserGetInfo` / `WM_WashTime_Total` | raw 直接顯示。 |
+| `0xA2` 當月用水量 | `UserGetInfo` / `WM_WaterUsed_Total` | raw 直接顯示，單位 L；日/月歷史 bucket 匯入 recorder external statistics。 |
+| `0xA3` 當月洗衣次數 | `UserGetInfo` / `WM_WashTime_Total` | raw 直接顯示；日/月歷史 bucket 匯入 recorder external statistics。 |
+| `UserGetInfo` 圖表用電量 | `UserGetInfo` / `Power` | `Total_kwh` 已是 kWh，不做 `×0.1`；日/月 bucket 匯入 recorder external statistics，交給官方 `statistics-graph` 顯示。 |
 | `0xB0` 版本更新 | `UpdateCheck` | bool，binary_sensor 顯示 on/off。 |
 | Fridge temperature 類 | `DeviceGetInfo` | `sensor.py` 對 fridge 有額外數值修正：大於 60000/30000/200 時分別做 offset。 |
 | PM2.5 `65535` | `DeviceGetInfo` | `_workaround_info()` 會把 climate/dehumidifier PM2.5 的 `65535` 改為 `0`。 |
+
+## UserGetInfo external statistics / statistics-graph
+
+`UserGetInfo` 的日/月 bucket 值匯入 Home Assistant recorder external statistics；真正的視覺化交給官方 `statistics-graph` dashboard card。
+
+不要用 attributes 或 custom SVG camera 當圖表資料來源。`statistics-graph` card 讀的是 Home Assistant recorder statistics；Panasonic 的 `UserGetInfo` bucket 值應匯入 external statistics，再由官方卡片顯示。前端卡片也要求 HA `history` integration 已載入；若測試用 HA shadow 沒有 `default_config:`，需在 `configuration.yaml` 明確加 `history:`，否則卡片只會顯示「歷史整合已關閉」。
+
+Dashboard 注意事項：
+
+- 卡片用 `stat_types: [state]` 顯示 Panasonic API bucket 值；不要用 `change`，否則 tooltip/legend 會在名稱後面顯示「（變更）」。
+- 不同單位不要放同一張 `statistics-graph`；例如洗衣機用水量是 L、洗衣次數是「次」，必須拆成兩張卡。
+- 對 external statistic id，不要在 `statistics-graph` 本身放 `title`；HA 會自動產生 History 連結，但 History 頁只懂 state entity，不懂 external statistic id，會顯示看不懂的 id 並在上一筆/下一筆時出現「找不到狀態歷史」。標題請用獨立 `heading` card。
+- Integration 不應安裝後自動修改使用者 Lovelace storage；專案提供根目錄 `dashboard_template.yaml` 作為可手動貼上/匯入的範本。
+- 範本採 `type: sections`、`max_columns: 2`；每種數據以兩個相鄰 section 排列，30 日（日統計）在左、12 個月（月統計）在右，避免用巢狀 `grid columns: 2` 把卡片縮成半寬。
+
+External statistic id 分日/月兩種粒度，避免日資料和月資料在同一 timestamp 互相覆寫：
+
+| Metric | UserGetInfo 欄位 | Day statistic id suffix | Month statistic id suffix | 單位 |
+|---|---|---|---|---|
+| 用電量 | `Power.kwh` | `{gwid}_energy_day` | `{gwid}_energy_month` | kWh |
+| 用水量 | `Other.WM_WaterUsed` | `{gwid}_water_day` | `{gwid}_water_month` | L |
+| 洗衣次數 | `Other.WM_WashTime` | `{gwid}_wash_count_day` | `{gwid}_wash_count_month` | 次 |
+
+最小 view YAML 範例（完整範本見 [`../dashboard_template.yaml`](../dashboard_template.yaml)）：
+
+```yaml
+title: Panasonic 統計圖表
+path: panasonic-statistics
+type: sections
+max_columns: 2
+sections:
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        heading: 用電量 - 近 30 日（日統計）
+      - type: statistics-graph
+        chart_type: bar
+        period: day
+        days_to_show: 30
+        stat_types:
+          - state
+        entities:
+          - entity: panasonic_ems2:<gwid>_energy_day
+            name: 客廳空調
+
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        heading: 用電量 - 近 12 個月（月統計）
+      - type: statistics-graph
+        chart_type: bar
+        period: month
+        days_to_show: 365
+        stat_types:
+          - state
+        entities:
+          - entity: panasonic_ems2:<gwid>_energy_month
+            name: 客廳空調
+```
 
 ## Weight plate / `PlateGetMode` 專用 key
 
@@ -448,7 +524,8 @@ _（空）_
 
 - `DeviceGetInfo` 是大部分即時狀態 key 的來源，且分 main / supplemental。
 - `CommandList` 不是 status 值來源；它是 metadata 來源，用來判斷哪些 key 是官方遠端宣告支援，並提供 `CommandName` / enum/range。
-- `UserGetInfo` 目前只抓 `Other`，因此 washer 的 `0xA2/0xA3` 是從這裡補進 status。
+- `UserGetInfo` integration 會用 `Other` 補 washer 的 `0xA2/0xA3` 當月值，並低頻抓 `Power` / `Other` 把日/月 bucket 匯入 recorder external statistics，供官方 `statistics-graph` dashboard card 顯示；不要建立 `0xA*_today/current_month/...` sensor 或 SVG camera 圖表 entity。
+- `UserGetInfo` 實測接受 `unit=day` 與 `unit=month`；`unit=mon/year` 會回 `傳入的unit錯誤`。當日/當月/近 30 日用 `day`，當年/近 1 年用 `month`。
 - `UpdateCheck` 補 `0xB0/0xB1`，不是 `DeviceGetInfo`。
 - `PlateGetMode` 是重量盤專用來源。
 - `UserGetDeviceStatus` 只當 quick gate，不等於 HA 完整 entity list。

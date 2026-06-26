@@ -77,6 +77,12 @@ custom_components/panasonic_ems2
 3. 輸入 Panasonic Smart Home / Panasonic IoT TW 帳號密碼。
 4. 完成設定，等待 Home Assistant 載入家電。
 
+## Panasonic 統計圖表
+
+本整合會把 Panasonic `UserGetInfo` 的日/月統計匯入 Home Assistant recorder external statistics，供官方 `statistics-graph` card 使用；安裝整合本身不會自動修改你的 Lovelace dashboard。
+
+專案根目錄提供 `dashboard_template.yaml`，可手動貼到 Lovelace view 或依你的 GWID 調整後匯入。範本採用每種數據一組左右排列：左側為近 30 日（日統計），右側為近 12 個月（月統計）。使用前請確認 HA 已載入 `recorder` 與 `history` integration。
+
 ## 協助新增或修正裝置支援
 
 如果你的家電沒有出現、實體不完整，或控制行為異常，請先收集該裝置的型號與 command metadata。
