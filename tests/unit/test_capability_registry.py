@@ -123,12 +123,14 @@ def test_registry_round_trip_helpers_keep_legacy_constant_shapes() -> None:
 def test_const_exports_registry_without_removing_legacy_constants() -> None:
     source = CONST.read_text(encoding="utf-8")
     names = _const_assignment_names()
+    env = load_constant_assignments(CONST)
 
     assert "from .capabilities import" in source
     assert "build_capability_registry" in source
     assert "CAPABILITY_REGISTRY" in names
 
-    # Existing public constants remain exported for current entity/platform code.
+    # Existing public constants remain exported for current entity/platform code,
+    # even when some are now imported through const.py decomposition seams.
     for legacy_name in (
         "COMMANDS_TYPE",
         "EXTRA_COMMANDS",
@@ -139,4 +141,4 @@ def test_const_exports_registry_without_removing_legacy_constants() -> None:
         "COMMAND_NAME_OVERRIDES",
         "COMMAND_RANGE_OVERRIDES",
     ):
-        assert legacy_name in names
+        assert legacy_name in env

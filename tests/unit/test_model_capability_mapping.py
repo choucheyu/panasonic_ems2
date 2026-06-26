@@ -7,67 +7,19 @@ lightweight and independent from a live HA shadow environment.
 
 from __future__ import annotations
 
-import ast
 from pathlib import Path
 from typing import Any
 
+from tests.helpers.source_parsing import load_constant_assignments
+
 ROOT = Path(__file__).resolve().parents[2]
-CONST_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "const.py"
-
-
-def _eval_literalish(node: ast.AST, env: dict[str, Any]) -> Any:
-    """Evaluate the subset of const.py assignments needed by these tests."""
-    if isinstance(node, ast.Constant):
-        return node.value
-
-    if isinstance(node, ast.Name):
-        if node.id not in env:
-            raise KeyError(node.id)
-        return env[node.id]
-
-    if isinstance(node, ast.List):
-        return [_eval_literalish(item, env) for item in node.elts]
-
-    if isinstance(node, ast.Tuple):
-        return tuple(_eval_literalish(item, env) for item in node.elts)
-
-    if isinstance(node, ast.Dict):
-        parsed: dict[Any, Any] = {}
-        for key, value in zip(node.keys, node.values):
-            if key is None:
-                raise TypeError("dictionary unpacking is not supported")
-            parsed[_eval_literalish(key, env)] = _eval_literalish(value, env)
-        return parsed
-
-    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-        if node.func.id == "str" and len(node.args) == 1 and not node.keywords:
-            return str(_eval_literalish(node.args[0], env))
-
-    raise TypeError(f"unsupported AST node for lightweight const parsing: {ast.dump(node)}")
+CORE_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core"
+CONST_PATH = CORE_PATH / "const.py"
+CLIMATE_CONSTANTS_PATH = CORE_PATH / "constants" / "climate.py"
 
 
 def _load_const_assignments() -> dict[str, Any]:
-    source = CONST_PATH.read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=str(CONST_PATH))
-    env: dict[str, Any] = {}
-
-    for node in tree.body:
-        if not isinstance(node, ast.Assign):
-            continue
-
-        names = [target.id for target in node.targets if isinstance(target, ast.Name)]
-        if not names:
-            continue
-
-        try:
-            value = _eval_literalish(node.value, env)
-        except (KeyError, TypeError):
-            continue
-
-        for name in names:
-            env[name] = value
-
-    return env
+    return load_constant_assignments(CONST_PATH)
 
 
 def _climate_supplemental(env: dict[str, Any]) -> dict[str, list[str]]:
@@ -157,7 +109,7 @@ def test_new_model_types_are_registered_but_pm25_remains_conservative() -> None:
 
 
 def test_disabled_high_risk_capabilities_have_traditional_chinese_rationale() -> None:
-    source = CONST_PATH.read_text(encoding="utf-8")
+    source = CLIMATE_CONSTANTS_PATH.read_text(encoding="utf-8")
 
     assert "UX 官方有「室內溫濕度監控」" in source
     assert "待 UX cloud/status snapshot 確認後再啟用" in source

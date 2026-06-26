@@ -39,13 +39,50 @@ def eval_literalish(node: ast.AST, env: dict[str, Any]) -> Any:
     raise TypeError(f"unsupported AST node for lightweight parsing: {ast.dump(node)}")
 
 
-def load_constant_assignments(path: Path) -> dict[str, Any]:
-    """Load literal-ish top-level assignments from a Python source file."""
+def _relative_import_path(path: Path, node: ast.ImportFrom) -> Path | None:
+    """Resolve a same-package relative import to a source file when possible."""
+    if node.level != 1 or not node.module:
+        return None
+
+    candidate = path.parent / Path(*node.module.split("."))
+    if candidate.with_suffix(".py").exists():
+        return candidate.with_suffix(".py")
+    if (candidate / "__init__.py").exists():
+        return candidate / "__init__.py"
+    return None
+
+
+def load_constant_assignments(path: Path, _seen: set[Path] | None = None) -> dict[str, Any]:
+    """Load literal-ish top-level assignments from a Python source file.
+
+    Supports same-package relative imports used by ``core.const`` compatibility
+    seams, so tests can keep reading legacy constants after safe decomposition.
+    """
+    path = path.resolve()
+    seen = set(_seen or set())
+    if path in seen:
+        return {}
+    seen.add(path)
+
     source = path.read_text(encoding="utf-8")
     tree = ast.parse(source, filename=str(path))
     env: dict[str, Any] = {}
 
     for node in tree.body:
+        if isinstance(node, ast.ImportFrom):
+            import_path = _relative_import_path(path, node)
+            if import_path is None:
+                continue
+            imported_env = load_constant_assignments(import_path, seen)
+            for alias in node.names:
+                if alias.name == "*":
+                    env.update(imported_env)
+                    continue
+                if alias.name not in imported_env:
+                    continue
+                env[alias.asname or alias.name] = imported_env[alias.name]
+            continue
+
         if not isinstance(node, ast.Assign):
             continue
 

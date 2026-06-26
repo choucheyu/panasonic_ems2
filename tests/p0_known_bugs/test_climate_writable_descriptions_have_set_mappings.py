@@ -5,51 +5,14 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+from tests.helpers.source_parsing import load_constant_assignments
+
 ROOT = Path(__file__).resolve().parents[2]
 CONST_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "const.py"
 
 
 def _literal_env() -> dict[str, object]:
-    source = CONST_PATH.read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=str(CONST_PATH))
-    env: dict[str, object] = {}
-
-    def eval_node(node: ast.AST) -> object:
-        if isinstance(node, ast.Constant):
-            return node.value
-        if isinstance(node, ast.Name):
-            return env[node.id]
-        if isinstance(node, ast.Dict):
-            return {eval_node(k): eval_node(v) for k, v in zip(node.keys, node.values) if k is not None}
-        if (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Name)
-            and node.func.id == "str"
-            and len(node.args) == 1
-        ):
-            return str(eval_node(node.args[0]))
-        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
-            return -eval_node(node.operand)  # type: ignore[operator]
-        raise TypeError(ast.dump(node))
-
-    for node in tree.body:
-        value = None
-        names: list[str] = []
-        if isinstance(node, ast.Assign):
-            names = [target.id for target in node.targets if isinstance(target, ast.Name)]
-            value = node.value
-        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
-            names = [node.target.id]
-            value = node.value
-        if not names or value is None:
-            continue
-        try:
-            resolved = eval_node(value)
-        except Exception:
-            continue
-        for name in names:
-            env[name] = resolved
-    return env
+    return load_constant_assignments(CONST_PATH)
 
 
 def _description_keys(tuple_name: str) -> list[str]:
