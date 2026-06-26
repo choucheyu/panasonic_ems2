@@ -5,3 +5,5 @@ secrets.py
 .DS_Store
 .vscode
 .hermes/observations/
+.hermes/plans/
+docs/
