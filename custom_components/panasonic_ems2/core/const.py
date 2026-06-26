@@ -1,8 +1,24 @@
 """Constants of the Panasonic Smart Home component."""
 
-from dataclasses import dataclass
-
 from .capabilities import build_capability_registry
+from .constants.common import (
+    ENTITY_EMPTY,
+    ENTITY_UPDATE,
+)
+from .entity_descriptions.base import (
+    PanasonicBinarySensorDescription,
+    PanasonicNumberDescription,
+    PanasonicSelectDescription,
+    PanasonicSensorDescription,
+    PanasonicSwitchDescription,
+)
+from .entity_descriptions.climate import (
+    CLIMATE_BINARY_SENSORS,
+    CLIMATE_NUMBERS,
+    CLIMATE_SELECTS,
+    CLIMATE_SENSORS,
+    CLIMATE_SWITCHES,
+)
 from .constants.climate import (
     CLIMATE_POWER,
     CLIMATE_OPERATING_MODE,
@@ -59,27 +75,16 @@ from .constants.climate import (
 )
 
 from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass,
-    BinarySensorEntityDescription
-)
-
-from homeassistant.components.number import (
-    NumberEntityDescription
+    BinarySensorDeviceClass
 )
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
-    SensorEntityDescription,
     SensorStateClass
 )
 
-from homeassistant.components.select import (
-    SelectEntityDescription
-)
-
 from homeassistant.components.switch import (
-    SwitchDeviceClass,
-    SwitchEntityDescription
+    SwitchDeviceClass
 )
 
 from homeassistant.components.climate.const import (
@@ -152,9 +157,7 @@ ENTITY_MONTHLY_ENERGY = "0xA0"
 ENTITY_DOOR_OPENS = "0xA1"
 ENTITY_WATER_USED = "0xA2"
 ENTITY_WASH_TIMES = "0xA3"
-ENTITY_UPDATE = "0xB0"
 ENTITY_UPDATE_INFO = "0xB1"
-ENTITY_EMPTY = "0xFF"
 
 USER_INFO_SERIES_STORAGE = "UserInfoSeries"
 USER_INFO_SERIES_REFRESH_SECONDS = 3600
@@ -969,14 +972,6 @@ CAPABILITY_REGISTRY = build_capability_registry(
 )
 
 
-@dataclass
-class PanasonicBinarySensorDescription(
-    BinarySensorEntityDescription
-):
-    """Class to describe an Panasonic binary sensor."""
-    options_value: list[str] | None = None
-
-
 AIRPURIFIER_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
     PanasonicBinarySensorDescription(
         key=ENTITY_UPDATE,
@@ -988,20 +983,6 @@ AIRPURIFIER_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
         key=AIRPURIFIER_HEAP_REPLACE_NOTIFY,
         name="HEAP Filter Replace",
         icon='mdi:filter-variant-remove'
-    )
-)
-
-CLIMATE_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
-    PanasonicBinarySensorDescription(
-        key=ENTITY_UPDATE,
-        name="版本更新",
-        icon='mdi:package-up',
-        device_class=BinarySensorDeviceClass.UPDATE
-    ),
-    PanasonicBinarySensorDescription(
-        key=ENTITY_EMPTY,
-        name="空",
-        icon='mdi:cog'
     )
 )
 
@@ -1089,14 +1070,6 @@ WASHING_MACHINE_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
     )
 )
 
-@dataclass
-class PanasonicNumberDescription(
-    NumberEntityDescription
-):
-    """Class to describe an Panasonic number."""
-    options_value: list[str] | None = None
-
-
 AIRPURIFIER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     PanasonicNumberDescription(
         key=AIRPURIFIER_TIMER_ON,
@@ -1117,31 +1090,6 @@ AIRPURIFIER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
         icon='mdi:timer-cog',
         native_min_value=0,
         native_max_value=24,
-        native_step=1,
-        entity_registry_enabled_default=False
-    )
-)
-
-CLIMATE_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
-    PanasonicNumberDescription(
-        key=CLIMATE_TIMER_ON,
-        name="時間到開",
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog-outline',
-        native_min_value=0,
-        native_max_value=1440,
-        native_step=1,
-        entity_registry_enabled_default=False
-    ),
-    PanasonicNumberDescription(
-        key=CLIMATE_TIMER_OFF,
-        name="時間到關",
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog',
-        native_min_value=0,
-        native_max_value=1440,
         native_step=1,
         entity_registry_enabled_default=False
     )
@@ -1280,14 +1228,6 @@ LIGHT_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
     )
 )
 
-@dataclass
-class PanasonicSelectDescription(
-    SelectEntityDescription
-):
-    """Class to describe an Panasonic select."""
-    options_value: list[str] | None = None
-
-
 AIRPURIFIER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     PanasonicSelectDescription(
         key=AIRPURIFIER_LIGHT,
@@ -1312,65 +1252,6 @@ AIRPURIFIER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
         icon='mdi:help',
         options=[],
         options_value=[]
-    )
-)
-
-CLIMATE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
-    PanasonicSelectDescription(
-        key=CLIMATE_FUZZY_MODE,
-        name="Fuzzy Mode",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:home-thermometer-outline',
-        options=["Better", "Too cloud", "Too hot", "Off", "On"],
-        options_value=["0", "1", "2", "3", "4"],
-    ),
-    PanasonicSelectDescription(
-        key=CLIMATE_ACTIVITY,
-        name="動向感應",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:motion-sensor',
-        options=["關", "對人", "不對人", "自動"],
-        options_value=["0", "1", "2", "3"]
-    ),
-    PanasonicSelectDescription(
-        key=CLIMATE_INDICATOR_LIGHT,
-        name="機體燈光",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:lightbulb',
-        options=["亮", "暗", "ECO燈滅"],
-        options_value=["0", "1", "2"]
-    ),
-    PanasonicSelectDescription(
-        key=CLIMATE_FAN_SPEED,
-        name="風量",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:fan',
-        options=["自動", "1", "2", "3", "4", "5"],
-        options_value=["0", "1", "2", "3", "4", "5"]
-    ),
-    PanasonicSelectDescription(
-        key=CLIMATE_SWING_VERTICAL_LEVEL,
-        name="上下風向",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:fan',
-        options=["自動", "1", "2", "3", "4"],
-        options_value=["0", "1", "2", "3", "4"]
-    ),
-    PanasonicSelectDescription(
-        key=CLIMATE_SWING_HORIZONTAL_LEVEL,
-        name="左右風向",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:fan',
-        options=["自動", "1", "2", "3", "4", "5", "6", "7"],
-        options_value=["0", "1", "2", "3", "4", "5", "6", "7"]
-    ),
-        PanasonicSelectDescription(
-        key=CLIMATE_IMMEDIATE_MILDEW_DRY,
-        name="立即乾燥防霉",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:weather-dust',
-        options=["關閉", "10分鐘行程", "20分鐘行程", "40分鐘行程", "60分鐘行程"],
-        options_value=["0", "1", "2", "3", "4"]
     )
 )
 
@@ -1532,13 +1413,6 @@ WASHING_MACHINE_SELECTS_BY_MODEL = {
 WASHING_MACHINE_SELECTS: tuple[PanasonicSelectDescription, ...] = ()
 
 
-@dataclass
-class PanasonicSensorDescription(
-    SensorEntityDescription
-):
-    """Class to describe an Panasonic sensor."""
-
-
 AIRPURIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
         key=AIRPURIFIER_AIR_QUALITY,
@@ -1581,54 +1455,6 @@ AIRPURIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
         icon="mdi:flash"
-    )
-)
-
-CLIMATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
-    PanasonicSensorDescription(
-        key=CLIMATE_TEMPERATURE_INDOOR,
-        name="室內溫度",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer"
-    ),
-    PanasonicSensorDescription(
-        key=CLIMATE_ERROR_CODE,
-        name="錯誤代碼",
-        icon="mdi:alert-circle"
-    ),
-    PanasonicSensorDescription(
-        key=CLIMATE_TEMPERATURE_OUTDOOR,
-        name="室外溫度",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer"
-    ),
-    PanasonicSensorDescription(
-        key=CLIMATE_PM25,
-        name="PM2.5",
-        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.PM25,
-        icon="mdi:chemical-weapon"
-    ),
-    PanasonicSensorDescription(
-        key=CLIMATE_ENERGY,
-        name="累積用電量",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        device_class=SensorDeviceClass.ENERGY,
-        icon="mdi:flash"
-    ),
-        PanasonicSensorDescription(
-        key=CLIMATE_HUMIDITY_INDOOR,
-        name="室內濕度",
-        native_unit_of_measurement=PERCENTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.HUMIDITY,
-        icon="mdi:water-percent"
     )
 )
 
@@ -1974,14 +1800,6 @@ WEIGHT_PLATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     )
 )
 
-@dataclass
-class PanasonicSwitchDescription(
-    SwitchEntityDescription
-):
-    """Class to describe an Panasonic switch."""
-    reverse_state: bool = False
-
-
 AIRPURIFIER_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
     PanasonicSwitchDescription(
         key=AIRPURIFIER_RESET_FILTER_NOTIFY,
@@ -2001,64 +1819,6 @@ AIRPURIFIER_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
         device_class=SwitchDeviceClass.SWITCH,
         icon='mdi:paw'
     )
-)
-
-CLIMATE_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
-    PanasonicSwitchDescription(
-        key=CLIMATE_AIRFRESH_MODE,
-        name=" nanoe™ X",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:atom-variant'
-    ),
-    PanasonicSwitchDescription(
-        key=CLIMATE_ANTI_MILDEW,
-        name="乾燥防霉",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:weather-dust'
-    ),
-    PanasonicSwitchDescription(
-        key=CLIMATE_AUTO_CLEAN,
-        name="自體淨",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:broom'
-    ),
-    PanasonicSwitchDescription(
-        key=CLIMATE_BUZZER,
-        name="操作提示音",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:volume-source',
-        reverse_state=True
-    ),
-    PanasonicSwitchDescription(
-        key=CLIMATE_MONITOR_MILDEW,
-        name="防霉監控",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:mushroom'
-    ),
-    PanasonicSwitchDescription(
-        key=CLIMATE_SLEEP_MODE,
-        name="睡眠",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:sleep'
-    ),
-    PanasonicSwitchDescription(
-        key=CLIMATE_BOOST,
-        name="急速",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:rocket-launch'
-    ),
-    PanasonicSwitchDescription(
-        key=CLIMATE_ECO,
-        name="ECONAVI",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:sprout'
-    ),
-    PanasonicSwitchDescription(
-        key=CLIMATE_VOICE,
-        name="聲控開關",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:account-voice'
-    )    
 )
 
 DEHUMIDIFIER_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (

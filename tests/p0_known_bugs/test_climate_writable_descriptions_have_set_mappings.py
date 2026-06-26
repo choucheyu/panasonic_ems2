@@ -8,7 +8,9 @@ from pathlib import Path
 from tests.helpers.source_parsing import load_constant_assignments
 
 ROOT = Path(__file__).resolve().parents[2]
-CONST_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "const.py"
+CORE_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core"
+CONST_PATH = CORE_PATH / "const.py"
+CLIMATE_DESCRIPTIONS_PATH = CORE_PATH / "entity_descriptions" / "climate.py"
 
 
 def _literal_env() -> dict[str, object]:
@@ -16,8 +18,9 @@ def _literal_env() -> dict[str, object]:
 
 
 def _description_keys(tuple_name: str) -> list[str]:
-    source = CONST_PATH.read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=str(CONST_PATH))
+    source_path = CLIMATE_DESCRIPTIONS_PATH if tuple_name.startswith("CLIMATE_") else CONST_PATH
+    source = source_path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(source_path))
     env = _literal_env()
     keys: list[str] = []
     for node in tree.body:

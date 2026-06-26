@@ -14,7 +14,9 @@ from typing import Any
 from tests.helpers.source_parsing import eval_literalish, load_constant_assignments
 
 ROOT = Path(__file__).resolve().parents[2]
-CONST_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "const.py"
+CORE_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core"
+CONST_PATH = CORE_PATH / "const.py"
+CLIMATE_DESCRIPTIONS_PATH = CORE_PATH / "entity_descriptions" / "climate.py"
 
 CLIMATE_DESCRIPTION_TUPLES = (
     "CLIMATE_BINARY_SENSORS",
@@ -28,8 +30,8 @@ CLIMATE_DESCRIPTION_TUPLES = (
 def _load_tuple_call_attributes(tuple_name: str) -> dict[str, dict[str, Any]]:
     """Return descriptor keyword attributes keyed by resolved command key."""
     env = load_constant_assignments(CONST_PATH)
-    source = CONST_PATH.read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=str(CONST_PATH))
+    source = CLIMATE_DESCRIPTIONS_PATH.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(CLIMATE_DESCRIPTIONS_PATH))
 
     for node in tree.body:
         assigned_names: list[str] = []
@@ -67,7 +69,7 @@ def _load_tuple_call_attributes(tuple_name: str) -> dict[str, dict[str, Any]]:
 
         return descriptions
 
-    raise AssertionError(f"{tuple_name} not found in {CONST_PATH}")
+    raise AssertionError(f"{tuple_name} not found in {CLIMATE_DESCRIPTIONS_PATH}")
 
 
 def _climate_descriptions_by_platform() -> dict[str, dict[str, dict[str, Any]]]:

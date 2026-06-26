@@ -18,6 +18,7 @@ from tests.helpers.source_parsing import load_constant_assignments, load_method_
 
 ROOT = Path(__file__).resolve().parents[2]
 CONST = ROOT / "custom_components/panasonic_ems2/core/const.py"
+CLIMATE_DESCRIPTIONS = ROOT / "custom_components/panasonic_ems2/core/entity_descriptions/climate.py"
 BASE = ROOT / "custom_components/panasonic_ems2/core/base.py"
 NUMBER = ROOT / "custom_components/panasonic_ems2/number.py"
 
@@ -87,7 +88,7 @@ def _eval_descriptor_node(node: ast.AST, env: dict[str, Any]) -> Any:
 
 def _load_climate_number_descriptions() -> tuple[dict[str, Any], ...]:
     env = _constants()
-    tree = ast.parse(CONST.read_text(encoding="utf-8"), filename=str(CONST))
+    tree = ast.parse(CLIMATE_DESCRIPTIONS.read_text(encoding="utf-8"), filename=str(CLIMATE_DESCRIPTIONS))
     for node in tree.body:
         if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id == "CLIMATE_NUMBERS":
             return _eval_descriptor_node(node.value, env)

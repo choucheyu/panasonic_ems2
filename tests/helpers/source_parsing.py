@@ -40,11 +40,15 @@ def eval_literalish(node: ast.AST, env: dict[str, Any]) -> Any:
 
 
 def _relative_import_path(path: Path, node: ast.ImportFrom) -> Path | None:
-    """Resolve a same-package relative import to a source file when possible."""
-    if node.level != 1 or not node.module:
+    """Resolve a relative import to a source file when possible."""
+    if node.level < 1 or not node.module:
         return None
 
-    candidate = path.parent / Path(*node.module.split("."))
+    base = path.parent
+    for _ in range(node.level - 1):
+        base = base.parent
+
+    candidate = base / Path(*node.module.split("."))
     if candidate.with_suffix(".py").exists():
         return candidate.with_suffix(".py")
     if (candidate / "__init__.py").exists():
