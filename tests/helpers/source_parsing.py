@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import importlib.machinery
 import importlib.util
 import sys
 import textwrap
@@ -167,30 +168,40 @@ def load_method_function(
     raise LookupError(f"{class_name}.{method_name} not found in {path}")
 
 
-def _load_core_module(module_name: str):
-    """Load a core module without importing the HA-dependent integration package."""
-    repo_root = Path(__file__).resolve().parents[2]
-    package_paths = {
-        "custom_components": repo_root / "custom_components",
-        "custom_components.panasonic_ems2": repo_root / "custom_components" / "panasonic_ems2",
-        "custom_components.panasonic_ems2.core": (
-            repo_root / "custom_components" / "panasonic_ems2" / "core"
-        ),
-    }
-    for package_name, package_path in package_paths.items():
-        module = sys.modules.get(package_name)
-        if module is None:
-            module = types.ModuleType(package_name)
-            module.__package__ = package_name
-            module.__path__ = [str(package_path)]  # type: ignore[attr-defined]
-            sys.modules[package_name] = module
+TEST_CORE_PACKAGE = "_panasonic_ems2_core_under_test"
 
-    qualified_name = f"custom_components.panasonic_ems2.core.{module_name}"
+
+def _ensure_synthetic_core_package(core_path: Path) -> None:
+    """Create a synthetic package rooted at ``core_path`` for relative imports."""
+    if TEST_CORE_PACKAGE in sys.modules:
+        return
+    module = types.ModuleType(TEST_CORE_PACKAGE)
+    module.__package__ = TEST_CORE_PACKAGE
+    module.__path__ = [str(core_path)]  # type: ignore[attr-defined]
+    module.__spec__ = importlib.machinery.ModuleSpec(
+        TEST_CORE_PACKAGE,
+        loader=None,
+        is_package=True,
+    )
+    sys.modules[TEST_CORE_PACKAGE] = module
+
+
+def _load_core_module(module_name: str):
+    """Load a core module without importing or faking the HA integration package."""
+    repo_root = Path(__file__).resolve().parents[2]
+    core_path = repo_root / "custom_components" / "panasonic_ems2" / "core"
+    _ensure_synthetic_core_package(core_path)
+
+    qualified_name = f"{TEST_CORE_PACKAGE}.{module_name}"
     if qualified_name in sys.modules:
         return sys.modules[qualified_name]
 
-    module_path = package_paths["custom_components.panasonic_ems2.core"] / f"{module_name}.py"
-    spec = importlib.util.spec_from_file_location(qualified_name, module_path)
+    module_path = core_path / f"{module_name}.py"
+    spec = importlib.util.spec_from_file_location(
+        qualified_name,
+        module_path,
+        submodule_search_locations=[str(module_path.parent)] if module_path.name == "__init__.py" else None,
+    )
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Unable to load core module from {module_path}")
     module = importlib.util.module_from_spec(spec)
