@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from tests.helpers.source_parsing import (
+    add_capability_runtime_globals,
     load_constant_assignments,
     load_method_function,
     panasonic_description_source_path,
@@ -38,7 +39,7 @@ SENSOR_PATH = ROOT / "custom_components" / "panasonic_ems2" / "sensor.py"
 
 
 def _constants() -> dict[str, object]:
-    return load_constant_assignments(CONST_PATH)
+    return add_capability_runtime_globals(load_constant_assignments(CONST_PATH))
 
 
 def _hdh_main_polling_commands(const: dict[str, object]) -> list[str]:

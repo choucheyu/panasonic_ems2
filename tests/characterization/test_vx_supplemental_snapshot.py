@@ -8,7 +8,11 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from tests.helpers.source_parsing import load_constant_assignments, load_method_function
+from tests.helpers.source_parsing import (
+    add_capability_runtime_globals,
+    load_constant_assignments,
+    load_method_function,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 CONST_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "const.py"
@@ -44,7 +48,7 @@ def _load_fixture() -> dict[str, Any]:
 
 
 def _load_cloud_method(method_name: str):
-    constants = load_constant_assignments(CONST_PATH)
+    constants = add_capability_runtime_globals(load_constant_assignments(CONST_PATH))
     constants["apis"] = _FakeApis
     constants["api_status"] = lambda func: func
     return constants, load_method_function(

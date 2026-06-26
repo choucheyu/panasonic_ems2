@@ -176,3 +176,97 @@ def range_family_from_registry(
     if capability is None:
         return {}
     return {model_type: dict(commands) for model_type, commands in capability.range_family.items()}
+
+
+def capability_for_device(
+    registry: Mapping[str, ModelCapability],
+    device_type: str | int,
+) -> ModelCapability:
+    """Return the normalized capability bundle for a device type."""
+    return registry.get(str(device_type), ModelCapability())
+
+
+def commands_for_model(
+    registry: Mapping[str, ModelCapability],
+    device_type: str | int,
+    model_type: str,
+    *,
+    fallback_extra_commands: list[str] | tuple[str, ...] | None = None,
+    fallback_excluded_model_types: list[str] | tuple[str, ...] | set[str] | None = None,
+    apply_excess: bool = True,
+) -> CommandList:
+    """Return base + model-specific commands with optional legacy fallback logic.
+
+    ``fallback_extra_commands`` preserves the historical fridge behavior: Taiwan
+    / non-JP models without explicit extra commands borrow the XGS command set.
+    """
+    capability = capability_for_device(registry, device_type)
+    extra_commands = capability.extra_commands.get(model_type, ())
+    commands = list(capability.base_commands) + list(extra_commands)
+
+    excluded_models = set(fallback_excluded_model_types or ())
+    if fallback_extra_commands and not extra_commands and model_type not in excluded_models:
+        commands.extend(fallback_extra_commands)
+
+    if apply_excess:
+        excess = set(capability.excess_commands.get(model_type, ()))
+        if excess:
+            commands = [command for command in commands if command not in excess]
+
+    return tuple(commands)
+
+
+def supplemental_commands_for_model(
+    registry: Mapping[str, ModelCapability],
+    device_type: str | int,
+    model_type: str,
+) -> CommandList:
+    """Return isolated supplemental DeviceGetInfo keys for a model."""
+    capability = capability_for_device(registry, device_type)
+    return capability.supplemental_commands.get(model_type, ())
+
+
+def set_command_id(
+    registry: Mapping[str, ModelCapability],
+    device_type: str | int,
+    command: str,
+) -> int | None:
+    """Return the writable set-command id for a command, if one is known."""
+    capability = capability_for_device(registry, device_type)
+    return capability.set_command_type.get(command)
+
+
+def command_name_override(
+    registry: Mapping[str, ModelCapability],
+    device_type: str | int,
+    command: str,
+) -> str | None:
+    """Return a local command-name override, if one exists."""
+    capability = capability_for_device(registry, device_type)
+    return capability.command_name_overrides.get(command)
+
+
+def command_range_override(
+    registry: Mapping[str, ModelCapability],
+    device_type: str | int,
+    command: str,
+) -> dict[str, Any] | None:
+    """Return a local command-parameter range override, if one exists."""
+    capability = capability_for_device(registry, device_type)
+    override = capability.command_range_overrides.get(command)
+    return dict(override) if override is not None else None
+
+
+def range_lookup_models(
+    registry: Mapping[str, ModelCapability],
+    device_type: str | int,
+    model_type: str,
+    command: str,
+) -> CommandList:
+    """Return remote metadata model candidates for command range lookup."""
+    capability = capability_for_device(registry, device_type)
+    candidates = [model_type]
+    alias = capability.range_family.get(model_type, {}).get(command)
+    if alias and alias != model_type:
+        candidates.append(alias)
+    return tuple(candidates)

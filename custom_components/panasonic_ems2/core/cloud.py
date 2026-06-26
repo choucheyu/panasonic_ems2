@@ -22,6 +22,14 @@ from ..api.errors import (
     Ems2TooManyRequest
 )
 from ..api.token_store import PanasonicTokenStore
+from .capabilities import (
+    command_name_override,
+    command_range_override,
+    commands_for_model,
+    range_lookup_models,
+    set_command_id,
+    supplemental_commands_for_model,
+)
 from .command_metadata import refactor_command_metadata
 from .statistics_builder import build_user_info_external_statistics_rows
 from .user_info_series import parse_user_info_series
@@ -32,13 +40,7 @@ from .const import (
     CONF_TOKEN_TIMEOUT,
     CONF_REFRESH_TOKEN,
     CONF_REFRESH_TOKEN_TIMEOUT,
-    COMMANDS_TYPE,
-    EXTRA_COMMANDS,
-    EXCESS_COMMANDS,
-    SUPPLEMENTAL_COMMANDS,
-    COMMAND_NAME_OVERRIDES,
-    COMMAND_RANGE_OVERRIDES,
-    CLIMATE_RANGE_FAMILY,
+    CAPABILITY_REGISTRY,
     MODEL_JP_TYPES,
     CLIMATE_PM25,
     DEVICE_TYPE_CLIMATE,
@@ -83,7 +85,6 @@ from .const import (
     WEIGHT_PLATE_TOTAL_WEIGHT,
     WEIGHT_PLATE_RESTORE_WEIGHT,
     WEIGHT_PLATE_LOW_BATTERY,
-    SET_COMMAND_TYPE,
     USER_INFO_TYPES,
     REQUEST_TIMEOUT
 )
@@ -371,7 +372,13 @@ class PanasonicSmartHome(object):
         """Return isolated supplemental command keys for this device/model."""
         device_type = str(device.get("DeviceType", ""))
         model_type = device.get("ModelType", "")
-        return SUPPLEMENTAL_COMMANDS.get(device_type, {}).get(model_type, [])
+        return list(
+            supplemental_commands_for_model(
+                CAPABILITY_REGISTRY,
+                device_type,
+                model_type,
+            )
+        )
 
     @api_status
     async def _fetch_device_command_snapshot(self, device: dict, device_id, keys: list) -> dict:
@@ -419,21 +426,21 @@ class PanasonicSmartHome(object):
         if not self._commands:
             return cmds_list
         commands_type = []
-        cmds = COMMANDS_TYPE.get(str(device_type), cmds_list)
-        extra_cmds = EXTRA_COMMANDS.get(str(device_type), {}).get(model_type, [])
-        excess_cmds = EXCESS_COMMANDS.get(str(device_type), {}).get(model_type, [])
-        if (int(device_type) == DEVICE_TYPE_FRIDGE and
-                model_type not in MODEL_JP_TYPES and
-                len(extra_cmds) < 1
-            ):
-            new_cmds = cmds + extra_cmds + FRIDGE_XGS_COMMANDS
-        else:
-            new_cmds = cmds + extra_cmds
+        fallback_extra_commands = None
+        fallback_excluded_model_types = None
+        if int(device_type) == DEVICE_TYPE_FRIDGE:
+            fallback_extra_commands = FRIDGE_XGS_COMMANDS
+            fallback_excluded_model_types = MODEL_JP_TYPES
 
-        if len(excess_cmds) >= 1:
-            for cmd in excess_cmds:
-                if cmd in new_cmds:
-                    new_cmds.remove(cmd)
+        new_cmds = commands_for_model(
+            CAPABILITY_REGISTRY,
+            device_type,
+            model_type,
+            fallback_extra_commands=fallback_extra_commands,
+            fallback_excluded_model_types=fallback_excluded_model_types,
+        )
+        if not new_cmds:
+            return cmds_list
 
         for cmd in new_cmds:
             commands_type.append(
@@ -486,11 +493,15 @@ class PanasonicSmartHome(object):
             # 否則 0x74 遙控、0x50 運轉情報等會被 HA 誤顯示為關閉/離線。
             return []
 
-        commands = COMMANDS_TYPE.get(str(device_type), None)
-        extra_cmds = EXTRA_COMMANDS.get(str(device_type), {}).get(model_type, [])
+        commands = commands_for_model(
+            CAPABILITY_REGISTRY,
+            device_type,
+            model_type,
+            apply_excess=False,
+        )
         status = {}
         if commands:
-            for key in commands + extra_cmds:
+            for key in commands:
                 status[key] = 0
 
         return [{'DeviceID': 1, 'status': status}]
@@ -941,7 +952,7 @@ class PanasonicSmartHome(object):
             _LOGGER.error(f"There is no auth for {gwid}!")
             return
         device_type = self._devices_info[gwid]["DeviceType"]
-        cmd = SET_COMMAND_TYPE[device_type].get(func, None)
+        cmd = set_command_id(CAPABILITY_REGISTRY, device_type, func)
         if cmd is None:
             _LOGGER.error(f"There is no cmd for {gwid}: {func}!")
             return
@@ -966,7 +977,7 @@ class PanasonicSmartHome(object):
 
         model_type = self._devices_info[device_gwid]["ModelType"]
         device_type = self._devices_info[device_gwid]["DeviceType"]
-        override = COMMAND_NAME_OVERRIDES.get(str(device_type), {}).get(command, None)
+        override = command_name_override(CAPABILITY_REGISTRY, device_type, command)
         if override is not None:
             return override
 
@@ -995,14 +1006,16 @@ class PanasonicSmartHome(object):
 
         model_type = self._devices_info[device_gwid]["ModelType"]
         device_type = self._devices_info[device_gwid]["DeviceType"]
-        override = COMMAND_RANGE_OVERRIDES.get(str(device_type), {}).get(command, None)
+        override = command_range_override(CAPABILITY_REGISTRY, device_type, command)
         if override is not None:
             return override
 
-        candidates = [model_type]
-        alias = CLIMATE_RANGE_FAMILY.get(model_type, {}).get(command)
-        if alias and alias != model_type:
-            candidates.append(alias)
+        candidates = range_lookup_models(
+            CAPABILITY_REGISTRY,
+            device_type,
+            model_type,
+            command,
+        )
 
         for candidate in candidates:
             if candidate not in self._commands_info:

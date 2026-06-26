@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import ast
+import importlib.util
+import sys
 import textwrap
 from pathlib import Path
 from typing import Any, Callable
@@ -162,3 +164,42 @@ def load_method_function(
                 return namespace[method_name]
 
     raise LookupError(f"{class_name}.{method_name} not found in {path}")
+
+
+def add_capability_runtime_globals(env: dict[str, Any]) -> dict[str, Any]:
+    """Add capability-registry runtime helpers for extracted cloud methods."""
+    repo_root = Path(__file__).resolve().parents[2]
+    capabilities_path = repo_root / "custom_components" / "panasonic_ems2" / "core" / "capabilities.py"
+    spec = importlib.util.spec_from_file_location(
+        "panasonic_capabilities_runtime_test",
+        capabilities_path,
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load capabilities module from {capabilities_path}")
+    capabilities = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = capabilities
+    spec.loader.exec_module(capabilities)
+
+    climate = str(env["DEVICE_TYPE_CLIMATE"])
+    runtime_env = dict(env)
+    runtime_env.update(
+        {
+            "CAPABILITY_REGISTRY": capabilities.build_capability_registry(
+                commands_type=env["COMMANDS_TYPE"],
+                extra_commands=env["EXTRA_COMMANDS"],
+                supplemental_commands=env["SUPPLEMENTAL_COMMANDS"],
+                excess_commands=env["EXCESS_COMMANDS"],
+                set_command_type=env["SET_COMMAND_TYPE"],
+                range_family={climate: env["CLIMATE_RANGE_FAMILY"]},
+                command_name_overrides=env["COMMAND_NAME_OVERRIDES"],
+                command_range_overrides=env["COMMAND_RANGE_OVERRIDES"],
+            ),
+            "command_name_override": capabilities.command_name_override,
+            "command_range_override": capabilities.command_range_override,
+            "commands_for_model": capabilities.commands_for_model,
+            "range_lookup_models": capabilities.range_lookup_models,
+            "set_command_id": capabilities.set_command_id,
+            "supplemental_commands_for_model": capabilities.supplemental_commands_for_model,
+        }
+    )
+    return runtime_env
