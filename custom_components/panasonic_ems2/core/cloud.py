@@ -1001,5 +1001,5 @@ class PanasonicSmartHome(object):
             self.hass.data[DOMAIN]["api_counts"] = self._api_counts
             self.hass.data[DOMAIN]["api_counts_per_hour"] = self._api_counts_per_hour
             return ret
-        except:
-            raise UpdateFailed("Failed while updating device status")
+        except Exception as err:
+            raise UpdateFailed("Failed while updating device status") from err
