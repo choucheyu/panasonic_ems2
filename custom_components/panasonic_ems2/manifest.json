@@ -5,7 +5,7 @@
   "dependencies": [
     "recorder"
   ],
-  "version": "0.1.1",
+  "version": "0.2.0",
   "iot_class": "cloud_polling",
   "documentation": "https://github.com/choucheyu/panasonic_ems2",
   "issue_tracker": "https://github.com/choucheyu/panasonic_ems2/issues",

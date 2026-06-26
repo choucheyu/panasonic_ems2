@@ -4,9 +4,9 @@
 
 [English](README.md) | [繁體中文](README_zh-tw.md)
 
-# Panasonic Smart IoT TW for Home Assistant
+# Panasonic Smart IoT TW for Home Assistant（台灣加強版）
 
-這是給 Home Assistant 使用的 Panasonic IoT TW / Panasonic Smart Home 自訂整合。
+這是給 Home Assistant 使用的 Panasonic IoT TW / Panasonic Smart Home 自訂整合，目標是補強台灣 Panasonic Smart Home 新型號、繁體中文顯示與統計圖表使用情境。
 
 本專案是 [`tsunglung/panasonic_ems2`](https://github.com/tsunglung/panasonic_ems2) 的台灣使用情境維護版；原專案則源自 [`osk2/panasonic_smart_app`](https://github.com/osk2/panasonic_smart_app)。本 fork 保留原始 Apache-2.0 授權與來源標示。
 
@@ -17,8 +17,17 @@
 - 補強 VX 系列空調支援與 supplemental cloud status 讀取。
 - 當 Panasonic cloud 回傳的機型 metadata 不完整時，補上空調運轉模式與風量選項的 range fallback。
 - 依裝置/cloud metadata 支援狀況，補上防霉相關控制/狀態、室內濕度、語音、PM2.5、風量等實體。
+- 補強 HDH 系列洗衣機（例如 `NA-V160HDH`）支援：依官方 CommandList 調整輪詢 key、補上 model-specific 設定 select、遠端遙控/洗劑/柔軟劑/預約時間等顯示語意。
+- 將 Panasonic `UserGetInfo` 日/月統計匯入 Home Assistant recorder external statistics，並提供官方 `statistics-graph` dashboard 範本。
 - 修正 switch entity 的 raw value 轉換。
 - 調整繁體中文與 Home Assistant UI 顯示文字。
+
+## 主要功能亮點
+
+- **台灣新型號補強**：針對 Panasonic Smart Home / Panasonic IoT TW 回傳的 model metadata 實測補洞，尤其是 VX/UX/UJ/UK 類空調與 HDH 洗衣機。
+- **HDH 洗衣機設定實體**：`0x14` 預約時間設定、`0x60` 時間調整、`0x61` 延後晾衣設定、`0x64` 行程設定會以 HDH model-specific select 建立；舊 `0x56` 僅保留為延後晾衣 raw 狀態，不當成設定 select。
+- **Panasonic 統計圖表**：用電量、洗衣機用水量、洗衣次數的 30 日 / 12 個月統計會寫入 recorder external statistics，可用官方 `statistics-graph` 卡片顯示。
+- **Dashboard 範本**：根目錄 `dashboard_template.yaml` 提供可手動匯入/貼上的 Lovelace view 範本；整合本身不會自動修改使用者 dashboard。
 
 > 實際可用功能仍取決於你的家電型號，以及 Panasonic 雲端 API 對該型號回傳的 command metadata。
 
@@ -82,6 +91,14 @@ custom_components/panasonic_ems2
 本整合會把 Panasonic `UserGetInfo` 的日/月統計匯入 Home Assistant recorder external statistics，供官方 `statistics-graph` card 使用；安裝整合本身不會自動修改你的 Lovelace dashboard。
 
 專案根目錄提供 `dashboard_template.yaml`，可手動貼到 Lovelace view 或依你的 GWID 調整後匯入。範本採用每種數據一組左右排列：左側為近 30 日（日統計），右側為近 12 個月（月統計）。使用前請確認 HA 已載入 `recorder` 與 `history` integration。
+
+範本包含：
+
+- 用電量：近 30 日 / 近 12 個月
+- 洗衣機用水量：近 30 日 / 近 12 個月
+- 洗衣機洗衣次數：近 30 日 / 近 12 個月
+
+不同單位會拆成不同卡片，避免洗衣次數被顯示成 L；`statistics-graph` 本身不放 `title`，避免 History 頁誤把 external statistic id 當成 state entity。
 
 ## 協助新增或修正裝置支援
 
