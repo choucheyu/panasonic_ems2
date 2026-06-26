@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from .capabilities import build_capability_registry
+
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntityDescription
@@ -1047,6 +1049,19 @@ SET_COMMAND_TYPE = {
         FRIDGE_ERROR_CODE_JP: 99
     }
 }
+
+CAPABILITY_REGISTRY = build_capability_registry(
+    commands_type=COMMANDS_TYPE,
+    extra_commands=EXTRA_COMMANDS,
+    supplemental_commands=SUPPLEMENTAL_COMMANDS,
+    excess_commands=EXCESS_COMMANDS,
+    set_command_type=SET_COMMAND_TYPE,
+    range_family={
+        str(DEVICE_TYPE_CLIMATE): CLIMATE_RANGE_FAMILY,
+    },
+    command_name_overrides=COMMAND_NAME_OVERRIDES,
+    command_range_overrides=COMMAND_RANGE_OVERRIDES,
+)
 
 
 @dataclass
