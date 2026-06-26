@@ -10,24 +10,17 @@ A Home Assistant custom integration for Panasonic IoT TW / Panasonic Smart Home 
 
 This is a Taiwan-focused maintained fork of [`tsunglung/panasonic_ems2`](https://github.com/tsunglung/panasonic_ems2), which was originally based on [`osk2/panasonic_smart_app`](https://github.com/osk2/panasonic_smart_app). The original Apache-2.0 license is preserved.
 
-## What is different in this fork
+## What is different in this fork / highlights
 
-This fork keeps the original integration goal, but carries additional fixes and device support validated against Taiwan Panasonic Smart Home usage:
+This fork keeps the original Panasonic cloud appliance integration goal, but adds fuller Home Assistant support for Taiwan Panasonic Smart Home / Panasonic IoT TW new models and real-world usage:
 
-- Additional VX-series climate support and supplemental cloud status reads.
-- Range fallback for climate operating mode and fan-speed options when model metadata is incomplete.
-- Additional climate entities such as mildew-related controls/status, indoor humidity, voice, PM2.5, and fan-speed options where supported by the device/cloud metadata.
-- HDH washer support such as `NA-V160HDH`: CommandList-aligned polling, model-specific setting selects, and clearer remote-control/detergent/softener/timer semantics.
-- Panasonic `UserGetInfo` day/month statistics imported into Home Assistant recorder external statistics, plus an official `statistics-graph` dashboard template.
-- Raw-value handling fixes for switch entities.
-- Traditional Chinese wording and Home Assistant UI text updates.
-
-## Highlights
-
-- **Taiwan new-model support**: practical fixes for incomplete Panasonic Smart Home / Panasonic IoT TW model metadata, especially VX/UX/UJ/UK-style climates and HDH washers.
-- **HDH washer setting entities**: `0x14` reservation time, `0x60` time adjustment, `0x61` delayed airing, and `0x64` course setting are exposed as HDH model-specific selects; legacy `0x56` stays a raw delayed-airing status, not a setting select.
-- **Panasonic statistics charts**: energy, washer water usage, and wash-count 30-day / 12-month buckets are stored as recorder external statistics for Home Assistant's official `statistics-graph` card.
+- **Taiwan new-model support**: practical fixes for incomplete Panasonic cloud model metadata, especially VX/UX/UJ/UK-style climates and HDH washers such as `NA-V160HDH`.
+- **Climate support improvements**: VX-series supplemental cloud status reads, plus operating-mode, fan-speed, mildew-related controls/status, indoor humidity, voice, PM2.5, airflow, and range fallbacks when model metadata is incomplete.
+- **HDH washer semantics**: CommandList-aligned main polling to avoid unstable large reads, with clearer display semantics for remote control, detergent/softener amounts, estimated/reservation times, and raw status values.
+- **HDH washer setting selects**: `0x14` reservation time, `0x60` time adjustment, `0x61` delayed airing, and `0x64` course setting are exposed as HDH model-specific selects; legacy `0x56` stays a raw delayed-airing status, not a setting select.
+- **Panasonic statistics charts**: `UserGetInfo` day/month buckets are imported into Home Assistant recorder external statistics so energy, washer water usage, and wash count can be displayed with the official `statistics-graph` card.
 - **Dashboard template**: `dashboard_template.yaml` provides an optional Lovelace view template that users can import or paste manually. The integration does not silently mutate user dashboards.
+- **Taiwan-focused UX**: switch raw-value handling fixes plus Traditional Chinese wording and Home Assistant UI text updates.
 
 > Device capability still depends on the exact appliance model and the command metadata returned by Panasonic's cloud API.
 

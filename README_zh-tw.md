@@ -10,24 +10,17 @@
 
 本專案是 [`tsunglung/panasonic_ems2`](https://github.com/tsunglung/panasonic_ems2) 的台灣使用情境維護版；原專案則源自 [`osk2/panasonic_smart_app`](https://github.com/osk2/panasonic_smart_app)。本 fork 保留原始 Apache-2.0 授權與來源標示。
 
-## 這個 fork 有哪些不同
+## 這個 fork 的重點與差異
 
-這個 fork 保留原本整合 Panasonic 雲端家電的目標，但加入了針對台灣 Panasonic Smart Home 使用情境實測後的修正與補強：
+這個 fork 保留原本整合 Panasonic 雲端家電的目標，但針對台灣 Panasonic Smart Home / Panasonic IoT TW 的新型號與實際使用情境，補上更完整的 Home Assistant 支援：
 
-- 補強 VX 系列空調支援與 supplemental cloud status 讀取。
-- 當 Panasonic cloud 回傳的機型 metadata 不完整時，補上空調運轉模式與風量選項的 range fallback。
-- 依裝置/cloud metadata 支援狀況，補上防霉相關控制/狀態、室內濕度、語音、PM2.5、風量等實體。
-- 補強 HDH 系列洗衣機（例如 `NA-V160HDH`）支援：依官方 CommandList 調整輪詢 key、補上 model-specific 設定 select、遠端遙控/洗劑/柔軟劑/預約時間等顯示語意。
-- 將 Panasonic `UserGetInfo` 日/月統計匯入 Home Assistant recorder external statistics，並提供官方 `statistics-graph` dashboard 範本。
-- 修正 switch entity 的 raw value 轉換。
-- 調整繁體中文與 Home Assistant UI 顯示文字。
-
-## 主要功能亮點
-
-- **台灣新型號補強**：針對 Panasonic Smart Home / Panasonic IoT TW 回傳的 model metadata 實測補洞，尤其是 VX/UX/UJ/UK 類空調與 HDH 洗衣機。
-- **HDH 洗衣機設定實體**：`0x14` 預約時間設定、`0x60` 時間調整、`0x61` 延後晾衣設定、`0x64` 行程設定會以 HDH model-specific select 建立；舊 `0x56` 僅保留為延後晾衣 raw 狀態，不當成設定 select。
-- **Panasonic 統計圖表**：用電量、洗衣機用水量、洗衣次數的 30 日 / 12 個月統計會寫入 recorder external statistics，可用官方 `statistics-graph` 卡片顯示。
+- **台灣新型號補強**：針對 Panasonic cloud 回傳的 model metadata 實測補洞，尤其是 VX/UX/UJ/UK 類空調與 HDH 系列洗衣機（例如 `NA-V160HDH`）。
+- **空調支援補強**：加入 VX 系列 supplemental cloud status 讀取；當 metadata 不完整時，補上運轉模式、風量、防霉相關控制/狀態、室內濕度、語音、PM2.5、風向/風量等實體與 range fallback。
+- **HDH 洗衣機語意修正**：依官方 CommandList 調整主輪詢 key，避免不穩定的大包讀取；修正遠端遙控、洗劑/柔軟劑投入量、預估/預約時間與 raw 狀態的顯示語意。
+- **HDH 洗衣機設定 select**：`0x14` 預約時間設定、`0x60` 時間調整、`0x61` 延後晾衣設定、`0x64` 行程設定會以 HDH model-specific select 建立；舊 `0x56` 僅保留為延後晾衣 raw 狀態，不當成設定 select。
+- **Panasonic 統計圖表**：將 `UserGetInfo` 日/月統計匯入 Home Assistant recorder external statistics，讓用電量、洗衣機用水量、洗衣次數可用官方 `statistics-graph` 卡片顯示。
 - **Dashboard 範本**：根目錄 `dashboard_template.yaml` 提供可手動匯入/貼上的 Lovelace view 範本；整合本身不會自動修改使用者 dashboard。
+- **台灣使用體驗調整**：修正 switch raw value 轉換，並調整繁體中文與 Home Assistant UI 顯示文字。
 
 > 實際可用功能仍取決於你的家電型號，以及 Panasonic 雲端 API 對該型號回傳的 command metadata。
 
