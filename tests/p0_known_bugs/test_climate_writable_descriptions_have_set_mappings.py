@@ -5,12 +5,14 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-from tests.helpers.source_parsing import load_constant_assignments
+from tests.helpers.source_parsing import (
+    load_constant_assignments,
+    panasonic_description_source_path,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core"
 CONST_PATH = CORE_PATH / "const.py"
-CLIMATE_DESCRIPTIONS_PATH = CORE_PATH / "entity_descriptions" / "climate.py"
 
 
 def _literal_env() -> dict[str, object]:
@@ -18,7 +20,7 @@ def _literal_env() -> dict[str, object]:
 
 
 def _description_keys(tuple_name: str) -> list[str]:
-    source_path = CLIMATE_DESCRIPTIONS_PATH if tuple_name.startswith("CLIMATE_") else CONST_PATH
+    source_path = panasonic_description_source_path(CORE_PATH, tuple_name)
     source = source_path.read_text(encoding="utf-8")
     tree = ast.parse(source, filename=str(source_path))
     env = _literal_env()

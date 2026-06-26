@@ -16,12 +16,12 @@ from tests.helpers.source_parsing import (
     eval_literalish,
     load_constant_assignments,
     load_method_function,
+    panasonic_description_source_path,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core"
 CONST_PATH = CORE_PATH / "const.py"
-CLIMATE_DESCRIPTIONS_PATH = CORE_PATH / "entity_descriptions" / "climate.py"
 CLOUD_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "cloud.py"
 STATISTICS_BUILDER_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "statistics_builder.py"
 USER_INFO_SERIES_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "user_info_series.py"
@@ -51,7 +51,7 @@ class FakeVolumeConverter:
 
 def _load_tuple_call_attributes(tuple_name: str) -> dict[str, dict[str, Any]]:
     env = load_constant_assignments(CONST_PATH)
-    source_path = CLIMATE_DESCRIPTIONS_PATH if tuple_name.startswith("CLIMATE_") else CONST_PATH
+    source_path = panasonic_description_source_path(CORE_PATH, tuple_name)
     source = source_path.read_text(encoding="utf-8")
     tree = ast.parse(source, filename=str(source_path))
 

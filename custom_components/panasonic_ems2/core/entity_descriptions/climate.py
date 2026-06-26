@@ -41,7 +41,10 @@ from ..constants.climate import (
     CLIMATE_TIMER_ON,
     CLIMATE_VOICE,
 )
-from ..constants.common import ENTITY_EMPTY, ENTITY_UPDATE
+from ..constants.common import (
+    ENTITY_EMPTY,
+    ENTITY_UPDATE,
+)
 from .base import (
     PanasonicBinarySensorDescription,
     PanasonicNumberDescription,

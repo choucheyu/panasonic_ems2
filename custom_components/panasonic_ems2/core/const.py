@@ -2,8 +2,23 @@
 
 from .capabilities import build_capability_registry
 from .constants.common import (
+    DEVICE_TYPE_AIRPURIFIER,
+    DEVICE_TYPE_CLIMATE,
+    DEVICE_TYPE_DEHUMIDIFIER,
+    DEVICE_TYPE_DRYER,
+    DEVICE_TYPE_ERV,
+    DEVICE_TYPE_FAN,
+    DEVICE_TYPE_FRIDGE,
+    DEVICE_TYPE_LIGHT,
+    DEVICE_TYPE_WASHING_MACHINE,
+    DEVICE_TYPE_WEIGHT_PLATE,
+    ENTITY_DOOR_OPENS,
     ENTITY_EMPTY,
+    ENTITY_MONTHLY_ENERGY,
     ENTITY_UPDATE,
+    ENTITY_UPDATE_INFO,
+    ENTITY_WASH_TIMES,
+    ENTITY_WATER_USED,
 )
 from .entity_descriptions.base import (
     PanasonicBinarySensorDescription,
@@ -72,6 +87,258 @@ from .constants.climate import (
     CLIMATE_PM10_2_MODELS,
     CLIMATE_PM25_MODELS,
     CLIMATE_RANGE_FAMILY,
+)
+
+from .constants.airpurifier import (
+    AIRPURIFIER_POWER,
+    AIRPURIFIER_OPERATING_MODE,
+    AIRPURIFIER_TIMER_ON,
+    AIRPURIFIER_TIMER_OFF,
+    AIRPURIFIER_AIR_QUALITY,
+    AIRPURIFIER_RESET_FILTER_NOTIFY,
+    AIRPURIFIER_HEAP_REPLACE_NOTIFY,
+    AIRPURIFIER_NANOEX,
+    AIRPURIFIER_LOCK,
+    AIRPURIFIER_ERROR_CODE,
+    AIRPURIFIER_ENERGY,
+    AIRPURIFIER_PM25,
+    AIRPURIFIER_51,
+    AIRPURIFIER_52,
+    AIRPURIFIER_TIMER_OFF_NEW,
+    AIRPURIFIER_FORMALDEHYDE,
+    AIRPURIFIER_PET_MODE,
+    AIRPURIFIER_LIGHT,
+    AIRPURIFIER_BUZZER,
+    AIRPURIFIER_RUNNING_TIME,
+    AIRPURIFIER_RESERVED,
+    AIRPURIFIER_NANOEX_PRESET,
+    AIRPURIFIER_PRESET_MODES,
+)
+from .constants.dehumidifier import (
+    DEHUMIDIFIER_POWER,
+    DEHUMIDIFIER_MODE,
+    DEHUMIDIFIER_TIMER_OFF,
+    DEHUMIDIFIER_RELATIVE_HUMIDITY,
+    DEHUMIDIFIER_TARGET_HUMIDITY,
+    DEHUMIDIFIER_HUMIDITY_INDOOR,
+    DEHUMIDIFIER_FAN_SPEED,
+    DEHUMIDIFIER_WATER_TANK_STATUS,
+    DEHUMIDIFIER_FILTER_CLEAN,
+    DEHUMIDIFIER_AIRFRESH_MODE,
+    DEHUMIDIFIER_FAN_MODE,
+    DEHUMIDIFIER_ERROR_CODE,
+    DEHUMIDIFIER_BUZZER,
+    DEHUMIDIFIER_ENERGY,
+    DEHUMIDIFIER_50,
+    DEHUMIDIFIER_51,
+    DEHUMIDIFIER_PM25,
+    DEHUMIDIFIER_TIMER_ON,
+    DEHUMIDIFIER_PM10,
+    DEHUMIDIFIER_58,
+    DEHUMIDIFIER_59,
+    DEHUMIDIFIER_MAX_HUMIDITY,
+    DEHUMIDIFIER_MIN_HUMIDITY,
+    DEHUMIDIFIER_DEFAULT_MODES,
+    DEHUMIDIFIER_PERFORMANCE_MODELS,
+    DEHUMIDIFIER_GHW_COMMANDS,
+    DEHUMIDIFIER_JHW_COMMANDS,
+)
+from .constants.dryer import (
+    DRYER_POWER,
+    DRYER_OPERATING_STATUS,
+    DRYER_HEATING_STATUS,
+    DRYER_OPERATING_MODE,
+    DRYER_OPERATING_TIME,
+    DRYER_REMAINING_TIME,
+    DRYER_STATUS,
+    DRYER_DISPLAY,
+    DRYER_FAN_SPEED,
+    DRYER_TEMPERATURE,
+    DRYER_ERROR_CODE,
+    DRYER_ENERGY,
+    DRYER_APPOINTMENT_REMAINING_TIME,
+    DRYER_PROGRAM_1,
+    DRYER_OPERATING_STATUS_NEW,
+    DRYER_OPERATING_MODE_NEW,
+    DRYER_PROGRAM_2,
+)
+from .constants.erv import (
+    ERV_POWER,
+    ERV_OPERATING_MODE,
+    ERV_FAN_SPEED,
+    ERV_TARGET_TEMPERATURE,
+    ERV_TEMPERATURE_IN,
+    ERV_TEMPERATURE_OUT,
+    ERV_TIMER_ON,
+    ERV_ERROR_CODE,
+    ERV_ENERGY,
+    ERV_RESET_FILTER_NOTIFY,
+    ERV_VENTILATE_MODE,
+    ERV_PRE_HEAT_COOL,
+    ERV_REVERED,
+    ERV_MINIMUM_TEMPERATURE,
+    ERV_MAXIMUM_TEMPERATURE,
+    ERV_AVAILABLE_MODES,
+    ERV_AVAILABLE_FAN_MODES,
+)
+from .constants.fan import (
+    FAN_POWER,
+    FAN_OPERATING_MODE,
+    FAN_SPEED,
+    FAN_TEMPERATURE_INDOOR,
+    FAN_OSCILLATE,
+    FAN_PRESET_MODES,
+)
+from .constants.fridge import (
+    FRIDGE_FREEZER_MODE,
+    FRIDGE_CHAMBER_MODE,
+    FRIDGE_FREEZER_TEMPERATURE,
+    FRIDGE_CHAMBER_TEMPERATURE,
+    FRIDGE_ECO,
+    FRIDGE_ERROR_CODE,
+    FRIDGE_ENERGY,
+    FRIDGE_DEFROST_SETTING,
+    FRIDGE_STOP_ICE_MAKING,
+    FRIDGE_FAST_ICE_MAKING,
+    FRIDGE_FRESH_QUICK_FREZZE,
+    FRIDGE_THAW_MODE,
+    FRIDGE_THAW_TEMPERATURE,
+    FRIDGE_WINTER_MDOE,
+    FRIDGE_SHOPPING_MODE,
+    FRIDGE_GO_OUT_MODE,
+    FRIDGE_NANOEX,
+    FRIDGE_ERROR_CODE_JP,
+    FRIDGE_XGS_COMMANDS,
+    FRIDGE_MODELS,
+    FRIDGE_2020_MODELS,
+)
+from .constants.light import (
+    LIGHT_POWER,
+    LIGHT_PERCENTAGE,
+    LIGHT_OPERATION_STATE,
+    LIGHT_CHANNEL_1_TIMER_ON,
+    LIGHT_CHANNEL_1_TIMER_OFF,
+    LIGHT_MAINTAIN_MODE,
+    LIGHT_CHANNEL_2_TIMER_ON,
+    LIGHT_CHANNEL_2_TIMER_OFF,
+    LIGHT_CHANNEL_3_TIMER_ON,
+    LIGHT_CHANNEL_3_TIMER_OFF,
+    LIGHT_RESERVED,
+    LIGHT_WTY_COMMANDS,
+)
+from .constants.washing_machine import (
+    WASHING_MACHINE_POWER,
+    WASHING_MACHINE_ENABLE,
+    WASHING_MACHINE_PROGRESS,
+    WASHING_MACHINE_OPERATING_STATUS_OLD,
+    WASHING_MACHINE_REMAING_WASH_TIME,
+    WASHING_MACHINE_TIMER,
+    WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
+    WASHING_MACHINE_ERROR_CODE,
+    WASHING_MACHINE_ENERGY,
+    WASHING_MACHINE_OPERATING_STATUS,
+    WASHING_MACHINE_51,
+    WASHING_MACHINE_52,
+    WASHING_MACHINE_53,
+    WASHING_MACHINE_CURRENT_MODE,
+    WASHING_MACHINE_CURRENT_PROGRESS,
+    WASHING_MACHINE_POSTPONE_DRYING,
+    WASHING_MACHINE_57,
+    WASHING_MACHINE_TIMER_REMAINING_TIME,
+    WASHING_MACHINE_59,
+    WASHING_MACHINE_60,
+    WASHING_MACHINE_61,
+    WASHING_MACHINE_POSTPONE_DRYING_TIME,
+    WASHING_MACHINE_PROGRESS_NEW,
+    WASHING_MACHINE_66,
+    WASHING_MACHINE_67,
+    WASHING_MACHINE_68,
+    WASHING_MACHINE_WARM_WATER,
+    WASHING_MACHINE_71,
+    WASHING_MACHINE_72,
+    WASHING_MACHINE_73,
+    WASHING_MACHINE_REMOTE_CONTROL,
+    WASHING_MACHINE_DETERGENT_AMOUNT,
+    WASHING_MACHINE_SOFTENER_AMOUNT,
+    WASHING_MACHINE_MODELS,
+    WASHING_MACHINE_2020_MODELS,
+    WASHING_MACHINE_LX128B_COMMANDS,
+    WASHING_MACHINE_HDH_COMMANDS,
+    WASHING_MACHINE_HDH_NON_COMMANDLIST_COMMANDS,
+    WASHING_MACHINE_HDH_SUPPLEMENTAL_COMMANDS,
+    WASHING_MACHINE_HDH_SUPPLEMENTAL_DISPLAY_KEYS,
+    COMMAND_NAME_OVERRIDES,
+    COMMAND_RANGE_OVERRIDES,
+    WASHING_MACHINE_CLOCK_TIME_KEYS,
+    WASHING_MACHINE_ACTIVE_FINISH_TIME_KEYS,
+    WASHING_MACHINE_RESERVATION_CLOCK_TIME_KEYS,
+    WASHING_MACHINE_ACTIVE_OPERATING_STATUS_VALUES,
+    WASHING_MACHINE_RESERVATION_OPERATING_STATUS_VALUES,
+    WASHING_MACHINE_KBS_COMMANDS,
+)
+from .constants.weight_plate import (
+    WEIGHT_PLATE_GET_WEIGHT,
+    WEIGHT_PLATE_FOOD_NAME,
+    WEIGHT_PLATE_MANAGEMENT_MODE,
+    WEIGHT_PLATE_MANAGEMENT_VALUE,
+    WEIGHT_PLATE_AMOUNT_MAX,
+    WEIGHT_PLATE_BUY_DATE,
+    WEIGHT_PLATE_DUE_DATE,
+    WEIGHT_PLATE_COMMUNICATION_MODE,
+    WEIGHT_PLATE_COMMUNICATION_TIME,
+    WEIGHT_PLATE_TOTAL_WEIGHT,
+    WEIGHT_PLATE_RESTORE_WEIGHT,
+    WEIGHT_PLATE_LOW_BATTERY,
+)
+
+from .entity_descriptions.airpurifier import (
+    AIRPURIFIER_BINARY_SENSORS,
+    AIRPURIFIER_NUMBERS,
+    AIRPURIFIER_SELECTS,
+    AIRPURIFIER_SENSORS,
+    AIRPURIFIER_SWITCHES,
+)
+from .entity_descriptions.dehumidifier import (
+    DEHUMIDIFIER_BINARY_SENSORS,
+    DEHUMIDIFIER_NUMBERS,
+    DEHUMIDIFIER_SELECTS,
+    DEHUMIDIFIER_SENSORS,
+    DEHUMIDIFIER_SWITCHES,
+)
+from .entity_descriptions.dryer import (
+    DRYER_BINARY_SENSORS,
+    DRYER_NUMBERS,
+    DRYER_SELECTS,
+    DRYER_SENSORS,
+)
+from .entity_descriptions.erv import (
+    ERV_BINARY_SENSORS,
+    ERV_NUMBERS,
+    ERV_SELECTS,
+    ERV_SENSORS,
+)
+from .entity_descriptions.fridge import (
+    FRIDGE_BINARY_SENSORS,
+    FRIDGE_SELECTS,
+    FRIDGE_SENSORS,
+    FRIDGE_SWITCHES,
+)
+from .entity_descriptions.light import (
+    LIGHT_BINARY_SENSORS,
+    LIGHT_NUMBERS,
+    LIGHT_SENSORS,
+    LIGHT_SWITCHES,
+)
+from .entity_descriptions.washing_machine import (
+    WASHING_MACHINE_BINARY_SENSORS,
+    WASHING_MACHINE_HDH_SELECTS,
+    WASHING_MACHINE_SELECTS_BY_MODEL,
+    WASHING_MACHINE_SELECTS,
+    WASHING_MACHINE_SENSORS,
+    WASHING_MACHINE_SWITCHES,
+)
+from .entity_descriptions.weight_plate import (
+    WEIGHT_PLATE_SENSORS,
 )
 
 from homeassistant.components.binary_sensor import (
@@ -153,11 +420,6 @@ USER_INFO_TYPES = [
     "Other"
 ]
 
-ENTITY_MONTHLY_ENERGY = "0xA0"
-ENTITY_DOOR_OPENS = "0xA1"
-ENTITY_WATER_USED = "0xA2"
-ENTITY_WASH_TIMES = "0xA3"
-ENTITY_UPDATE_INFO = "0xB1"
 
 USER_INFO_SERIES_STORAGE = "UserInfoSeries"
 USER_INFO_SERIES_REFRESH_SECONDS = 3600
@@ -226,44 +488,9 @@ USER_INFO_SERIES_KEYS = [
     ENTITY_WASH_TIMES_LAST_12_MONTHS,
 ]
 
-DEVICE_TYPE_CLIMATE = 1
-DEVICE_TYPE_FRIDGE = 2
-DEVICE_TYPE_WASHING_MACHINE = 3
-DEVICE_TYPE_DEHUMIDIFIER = 4
-DEVICE_TYPE_DRYER = 6
-DEVICE_TYPE_AIRPURIFIER = 8
-DEVICE_TYPE_ERV = 14
-DEVICE_TYPE_FAN = 15
-DEVICE_TYPE_LIGHT = 17
-DEVICE_TYPE_WEIGHT_PLATE = 23
 
-AIRPURIFIER_POWER = "0x00"
-AIRPURIFIER_OPERATING_MODE = "0x01"
-AIRPURIFIER_TIMER_ON = "0x02"
-AIRPURIFIER_TIMER_OFF = "0x03"
-AIRPURIFIER_AIR_QUALITY = "0x04"
-AIRPURIFIER_RESET_FILTER_NOTIFY = "0x05"
-AIRPURIFIER_HEAP_REPLACE_NOTIFY = "0x06"
-AIRPURIFIER_NANOEX = "0x07"
-AIRPURIFIER_LOCK = "0x08"
-AIRPURIFIER_ERROR_CODE = "0x09"
-AIRPURIFIER_ENERGY = "0x0E"
-AIRPURIFIER_PM25 = "0x50"
-AIRPURIFIER_51 = "0x51"
-AIRPURIFIER_52 = "0x52"
-AIRPURIFIER_TIMER_OFF_NEW = "0x53"
-AIRPURIFIER_FORMALDEHYDE = "0x54"
-AIRPURIFIER_PET_MODE = "0x55"
-AIRPURIFIER_LIGHT = "0x56"
-AIRPURIFIER_BUZZER = "0x57"
 #AIRPURIFIER_LIGHT = "0x62"
-AIRPURIFIER_RUNNING_TIME = "0x63"
-AIRPURIFIER_RESERVED = "0x7F"
 
-AIRPURIFIER_NANOEX_PRESET = "nanoe™ X"
-AIRPURIFIER_PRESET_MODES = {
-    AIRPURIFIER_NANOEX: AIRPURIFIER_NANOEX_PRESET,
-}
 
 CLIMATE_AVAILABLE_MODES = {
 #    HVACMode.OFF: -1,
@@ -315,339 +542,6 @@ CLIMATE_AVAILABLE_PRESET_MODES = {
     CLIMATE_SLEEP_MODE: PRESET_SLEEP
 }
 
-DEHUMIDIFIER_POWER = "0x00"
-DEHUMIDIFIER_MODE = "0x01"
-DEHUMIDIFIER_TIMER_OFF = "0x02"
-DEHUMIDIFIER_RELATIVE_HUMIDITY = "0x03"
-DEHUMIDIFIER_TARGET_HUMIDITY = "0x04"
-DEHUMIDIFIER_HUMIDITY_INDOOR = "0x07"
-DEHUMIDIFIER_FAN_SPEED = "0x09"
-DEHUMIDIFIER_WATER_TANK_STATUS = "0x0A"
-DEHUMIDIFIER_FILTER_CLEAN = "0x0B"
-DEHUMIDIFIER_AIRFRESH_MODE = "0x0D"
-DEHUMIDIFIER_FAN_MODE = "0x0E"
-DEHUMIDIFIER_ERROR_CODE = "0x12"
-DEHUMIDIFIER_BUZZER = "0x18"
-DEHUMIDIFIER_ENERGY = "0x1D"
-DEHUMIDIFIER_50 = "0x50"
-DEHUMIDIFIER_51 = "0x51"
-DEHUMIDIFIER_PM25 = "0x53"
-DEHUMIDIFIER_TIMER_ON = "0x55"
-DEHUMIDIFIER_PM10 = "0x56"
-DEHUMIDIFIER_58 = "0x58"
-DEHUMIDIFIER_59 = "0x59"
-
-DEHUMIDIFIER_MAX_HUMIDITY = 70
-DEHUMIDIFIER_MIN_HUMIDITY = 40
-
-DEHUMIDIFIER_DEFAULT_MODES = {
-    "Auto": 0,
-    "Set": 1,
-    "Continuous": 2,
-    "Cloth Dry": 3
-}
-
-DEHUMIDIFIER_PERFORMANCE_MODELS = ["KBS", "LMS", "NM"]
-
-DEHUMIDIFIER_GHW_COMMANDS = []
-
-DEHUMIDIFIER_JHW_COMMANDS = [
-    DEHUMIDIFIER_ERROR_CODE,
-#    DEHUMIDIFIER_51,
-    DEHUMIDIFIER_PM25,
-    DEHUMIDIFIER_PM10,
-    DEHUMIDIFIER_58,
-#    DEHUMIDIFIER_59
-]
-
-DRYER_POWER = "0x00"
-DRYER_OPERATING_STATUS = "0x01"
-DRYER_HEATING_STATUS = "0x02"
-DRYER_OPERATING_MODE = "0x03"
-DRYER_OPERATING_TIME = "0x04"
-DRYER_REMAINING_TIME = "0x05"
-DRYER_STATUS = "0x06"
-DRYER_DISPLAY = "0x07"
-DRYER_FAN_SPEED = "0x08"
-DRYER_TEMPERATURE = "0x09"
-DRYER_ERROR_CODE = "0x0A"
-DRYER_ENERGY = "0x0F"
-DRYER_APPOINTMENT_REMAINING_TIME = "0x15"
-DRYER_PROGRAM_1 = "0x34"
-DRYER_OPERATING_STATUS_NEW = "0x50"
-DRYER_OPERATING_MODE_NEW = "0x55"
-DRYER_PROGRAM_2 = "0x64"
-
-ERV_POWER = "0x00"
-ERV_OPERATING_MODE = "0x01"
-ERV_FAN_SPEED = "0x02"
-ERV_TARGET_TEMPERATURE = "0x03"
-ERV_TEMPERATURE_IN = "0x04"
-ERV_TEMPERATURE_OUT = "0x05"
-ERV_TIMER_ON = "0x06"
-ERV_ERROR_CODE = "0x09"
-ERV_ENERGY = "0x0E"
-ERV_RESET_FILTER_NOTIFY = "0x14"
-ERV_VENTILATE_MODE = "0x15"
-ERV_PRE_HEAT_COOL = "0x16"
-ERV_REVERED = "0x7F"
-
-ERV_MINIMUM_TEMPERATURE = -128
-ERV_MAXIMUM_TEMPERATURE = 127
-
-ERV_AVAILABLE_MODES = {
-    "Cool": 0,
-    "Dehumidify": 1,
-    "Fan": 2,
-    "Auto": 3,
-    "Heat": 4
-}
-ERV_AVAILABLE_FAN_MODES = {
-    "Auto": 0,
-    "1": 1,
-    "2": 2,
-    "3": 3,
-    "4": 4,
-    "5": 5,
-    "6": 6,
-    "7": 7,
-    "8": 8,
-    "9": 9,
-    "10": 10,
-    "11": 11,
-    "12": 12,
-    "13": 13,
-    "14": 14,
-    "15": 15
-}
-
-FAN_POWER = "0x00"
-FAN_OPERATING_MODE = "0x01"
-FAN_SPEED = "0x02"
-FAN_TEMPERATURE_INDOOR = "0x03"
-FAN_OSCILLATE = "0x05"
-
-FAN_PRESET_MODES = {
-    "mode 1": 0,
-    "mode 2": 1,
-    "mode 3": 2,
-    "mode 4": 3,
-    "mode 5": 4
-}
-
-FRIDGE_FREEZER_MODE = "0x00"
-FRIDGE_CHAMBER_MODE = "0x01"
-FRIDGE_FREEZER_TEMPERATURE = "0x03"
-FRIDGE_CHAMBER_TEMPERATURE = "0x05"
-FRIDGE_ECO = "0x0C"
-FRIDGE_ERROR_CODE = "0x0E"
-FRIDGE_ENERGY = "0x13"
-FRIDGE_DEFROST_SETTING = "0x50"
-FRIDGE_STOP_ICE_MAKING = "0x52"
-FRIDGE_FAST_ICE_MAKING = "0x53"
-FRIDGE_FRESH_QUICK_FREZZE = "0x56"
-FRIDGE_THAW_MODE = "0x57"
-FRIDGE_THAW_TEMPERATURE = "0x58"
-FRIDGE_WINTER_MDOE = "0x5A"
-FRIDGE_SHOPPING_MODE = "0x5B"
-FRIDGE_GO_OUT_MODE = "0x5C"
-FRIDGE_NANOEX = "0x61"
-FRIDGE_ERROR_CODE_JP = "0x63"
-
-FRIDGE_XGS_COMMANDS = [
-                FRIDGE_ECO,
-                FRIDGE_FREEZER_TEMPERATURE,
-                FRIDGE_CHAMBER_TEMPERATURE,
-                FRIDGE_THAW_TEMPERATURE,
-                FRIDGE_ENERGY,
-                FRIDGE_NANOEX
-            ]
-
-FRIDGE_MODELS = [
-    "NR-F655WX-X1", "NR-F655WX-X", "NR-F655WPX"
-]
-
-FRIDGE_2020_MODELS = [
-    "NR-F506HX-N1", "NR-F506HX-W1", "NR-F506HX-X1", "NR-F556HX-N1",
-    "NR-F556HX-W1", "NR-F556HX-X1", "NR-F606HX-N1", "NR-F606HX-W1",
-    "NR-F606HX-X1", "NR-F656WX-X1"
-]
-
-LIGHT_POWER = "0x00"
-LIGHT_PERCENTAGE = "0x01"
-LIGHT_OPERATION_STATE = "0x70"
-LIGHT_CHANNEL_1_TIMER_ON = "0x71"
-LIGHT_CHANNEL_1_TIMER_OFF = "0x72"
-LIGHT_MAINTAIN_MODE = "0x73"
-LIGHT_CHANNEL_2_TIMER_ON = "0x74"
-LIGHT_CHANNEL_2_TIMER_OFF = "0x75"
-LIGHT_CHANNEL_3_TIMER_ON = "0x76"
-LIGHT_CHANNEL_3_TIMER_OFF = "0x77"
-LIGHT_RESERVED = "0x7F"
-
-LIGHT_WTY_COMMANDS = [
-#    LIGHT_OPERATION_STATE,
-#    LIGHT_CHANNEL_1_TIMER_ON,
-#    LIGHT_CHANNEL_1_TIMER_OFF,
-    LIGHT_MAINTAIN_MODE,
-#    LIGHT_CHANNEL_2_TIMER_ON,
-#    LIGHT_CHANNEL_2_TIMER_OFF,
-#    LIGHT_CHANNEL_3_TIMER_ON,
-#    LIGHT_CHANNEL_3_TIMER_OFF
-]
-
-WASHING_MACHINE_POWER = "0x00"
-WASHING_MACHINE_ENABLE = "0x01"
-WASHING_MACHINE_PROGRESS = "0x02"
-WASHING_MACHINE_OPERATING_STATUS_OLD = "0x03"
-WASHING_MACHINE_REMAING_WASH_TIME= "0x13"
-WASHING_MACHINE_TIMER = "0x14"
-WASHING_MACHINE_TIMER_REMAINING_TIME_OLD = "0x15"
-WASHING_MACHINE_ERROR_CODE = "0x19"
-WASHING_MACHINE_ENERGY = "0x1E"
-WASHING_MACHINE_OPERATING_STATUS = "0x50"
-WASHING_MACHINE_51 = "0x51"
-WASHING_MACHINE_52 = "0x52"
-WASHING_MACHINE_53 = "0x53"
-WASHING_MACHINE_CURRENT_MODE = "0x54"
-WASHING_MACHINE_CURRENT_PROGRESS = "0x55"
-WASHING_MACHINE_POSTPONE_DRYING = "0x56"
-WASHING_MACHINE_57 = "0x57"
-WASHING_MACHINE_TIMER_REMAINING_TIME = "0x58"
-WASHING_MACHINE_59 = "0x59"
-WASHING_MACHINE_60 = "0x60"
-WASHING_MACHINE_61 = "0x61"
-WASHING_MACHINE_POSTPONE_DRYING_TIME = WASHING_MACHINE_61
-WASHING_MACHINE_PROGRESS_NEW = "0x64"
-WASHING_MACHINE_66 = "0x66"
-WASHING_MACHINE_67 = "0x67"
-WASHING_MACHINE_68 = "0x68"
-WASHING_MACHINE_WARM_WATER = "0x69"
-WASHING_MACHINE_71 = "0x71"
-WASHING_MACHINE_72 = "0x72"
-WASHING_MACHINE_73 = "0x73"
-WASHING_MACHINE_REMOTE_CONTROL = "0x74"
-WASHING_MACHINE_DETERGENT_AMOUNT = "0x76"
-WASHING_MACHINE_SOFTENER_AMOUNT = "0x77"
-
-WASHING_MACHINE_MODELS = ["DDH", "DW","HDH", "MDH"]
-WASHING_MACHINE_2020_MODELS = ["KBS", "LM", "LMS"]
-
-WASHING_MACHINE_LX128B_COMMANDS = [
-    WASHING_MACHINE_71,
-    WASHING_MACHINE_72,
-    WASHING_MACHINE_73
-]
-
-WASHING_MACHINE_HDH_COMMANDS = [
-    # HDH 遠端 CommandList（2026-06-26 只讀確認）有列出、但共用 base 未包含的主包 keys。
-    # 主 DeviceGetInfo 只放遠端 metadata 正式宣告的 command，避免重演冷氣全量輪詢 timeout 問題。
-    WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
-    WASHING_MACHINE_60,
-    WASHING_MACHINE_POSTPONE_DRYING_TIME,
-    WASHING_MACHINE_PROGRESS_NEW,
-]
-
-WASHING_MACHINE_HDH_NON_COMMANDLIST_COMMANDS = [
-    # 以下 key 不在 HDH 遠端 CommandList；不可留在主包，避免 DeviceGetInfo 大包 timeout。
-    WASHING_MACHINE_TIMER_REMAINING_TIME,
-    WASHING_MACHINE_ENERGY,
-    WASHING_MACHINE_POSTPONE_DRYING,
-    WASHING_MACHINE_52,
-    WASHING_MACHINE_66,
-    WASHING_MACHINE_67,
-    WASHING_MACHINE_REMOTE_CONTROL,
-    WASHING_MACHINE_DETERGENT_AMOUNT,
-    WASHING_MACHINE_SOFTENER_AMOUNT,
-]
-
-WASHING_MACHINE_HDH_SUPPLEMENTAL_COMMANDS = [
-    # 以下 key 不在 HDH 遠端 CommandList，但已由實機小包 DeviceGetInfo / observation 確認可讀；改走 supplemental 小包。
-    WASHING_MACHINE_TIMER_REMAINING_TIME,  # 0x58：預約洗衣完成時間（分鐘），僅在 0x50=預約中 時有語意。
-    WASHING_MACHINE_ENERGY,                # 0x1E：用電量；不在 HDH CommandList，改用 supplemental 小包。
-    WASHING_MACHINE_REMOTE_CONTROL,        # 0x74：遠端遙控，1 為開啟、0 為關閉。
-    WASHING_MACHINE_DETERGENT_AMOUNT,      # 0x76：洗劑投入設定 mL。
-    WASHING_MACHINE_SOFTENER_AMOUNT,       # 0x77：柔軟劑投入設定 mL。
-
-    # 0xA2/0xA3/0xB0 是非 DeviceGetInfo 來源的補充顯示 key；
-    # 它們分別由 UserGetInfo / UpdateCheck 補進 Information，不放進此清單，避免錯誤呼叫 DeviceGetInfo。
-
-    # 以下 key 目前不是 HDH 遠端 CommandList 主包，且語意或穩定性尚未確認；先不要常態讀取。
-    # WASHING_MACHINE_OPERATING_STATUS_OLD,      # 0x03：舊式狀態欄位，與 0x50 關係未確認。
-    # WASHING_MACHINE_POSTPONE_DRYING,           # 0x56：延後晾衣狀態/設定語意未確認。
-    # WASHING_MACHINE_52,                        # 0x52：未知欄位，尚未對應官方 App 顯示。
-    # WASHING_MACHINE_53,                        # 0x53：未知欄位，尚未對應官方 App 顯示。
-    # WASHING_MACHINE_57,                        # 0x57：未知欄位，尚未對應官方 App 顯示。
-    # WASHING_MACHINE_66,                        # 0x66：未知欄位，尚未對應官方 App 顯示。
-    # WASHING_MACHINE_67,                        # 0x67：未知欄位，尚未對應官方 App 顯示。
-]
-
-WASHING_MACHINE_HDH_SUPPLEMENTAL_DISPLAY_KEYS = [
-    # HDH 顯示層 supplemental：包含 DeviceGetInfo supplemental 與非 DeviceGetInfo 補充資訊。
-    WASHING_MACHINE_TIMER_REMAINING_TIME,
-    WASHING_MACHINE_ENERGY,
-    WASHING_MACHINE_REMOTE_CONTROL,
-    WASHING_MACHINE_DETERGENT_AMOUNT,
-    WASHING_MACHINE_SOFTENER_AMOUNT,
-    ENTITY_WATER_USED,   # 0xA2：當月用水量，由 UserGetInfo 補入。
-    ENTITY_WASH_TIMES,   # 0xA3：當月洗衣次數，由 UserGetInfo 補入。
-    ENTITY_UPDATE,       # 0xB0：版本更新，由 UpdateCheck 補入。
-]
-
-COMMAND_NAME_OVERRIDES = {
-    str(DEVICE_TYPE_WASHING_MACHINE): {
-        WASHING_MACHINE_REMAING_WASH_TIME: "預估洗衣完成時間",
-        WASHING_MACHINE_TIMER_REMAINING_TIME_OLD: "預約洗衣開始時間",
-        WASHING_MACHINE_TIMER_REMAINING_TIME: "預約洗衣完成時間",
-        WASHING_MACHINE_CURRENT_MODE: "目前洗衣行程",
-        WASHING_MACHINE_CURRENT_PROGRESS: "洗衣行程設定",
-        WASHING_MACHINE_REMOTE_CONTROL: "遠端遙控",
-    }
-}
-
-COMMAND_RANGE_OVERRIDES = {
-    str(DEVICE_TYPE_WASHING_MACHINE): {
-        WASHING_MACHINE_REMOTE_CONTROL: {
-            "關閉": 0,
-            "開啟": 1,
-        },
-    }
-}
-
-WASHING_MACHINE_CLOCK_TIME_KEYS = [
-    WASHING_MACHINE_REMAING_WASH_TIME,
-    WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
-    WASHING_MACHINE_TIMER_REMAINING_TIME,
-]
-
-WASHING_MACHINE_ACTIVE_FINISH_TIME_KEYS = [
-    WASHING_MACHINE_REMAING_WASH_TIME,
-]
-
-WASHING_MACHINE_RESERVATION_CLOCK_TIME_KEYS = [
-    WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
-    WASHING_MACHINE_TIMER_REMAINING_TIME,
-]
-
-WASHING_MACHINE_ACTIVE_OPERATING_STATUS_VALUES = [2]
-WASHING_MACHINE_RESERVATION_OPERATING_STATUS_VALUES = [3, 4]
-
-WASHING_MACHINE_KBS_COMMANDS = [
-    WASHING_MACHINE_TIMER_REMAINING_TIME_OLD
-]
-
-WEIGHT_PLATE_GET_WEIGHT = "0x52"
-WEIGHT_PLATE_FOOD_NAME = "0x80"
-WEIGHT_PLATE_MANAGEMENT_MODE = "0x81"
-WEIGHT_PLATE_MANAGEMENT_VALUE = "0x82"
-WEIGHT_PLATE_AMOUNT_MAX = "0x83"
-WEIGHT_PLATE_BUY_DATE = "0x84"
-WEIGHT_PLATE_DUE_DATE = "0x85"
-WEIGHT_PLATE_COMMUNICATION_MODE = "0x8A"
-WEIGHT_PLATE_COMMUNICATION_TIME = "0x8B"
-WEIGHT_PLATE_TOTAL_WEIGHT = "0x8C"
-WEIGHT_PLATE_RESTORE_WEIGHT = "0x8D"
-WEIGHT_PLATE_LOW_BATTERY = "0x8E"
 
 MODEL_JP_TYPES = [
     "F655",
@@ -971,964 +865,6 @@ CAPABILITY_REGISTRY = build_capability_registry(
     command_range_overrides=COMMAND_RANGE_OVERRIDES,
 )
 
-
-AIRPURIFIER_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
-    PanasonicBinarySensorDescription(
-        key=ENTITY_UPDATE,
-        name="版本更新",
-        icon='mdi:package-up',
-        device_class=BinarySensorDeviceClass.UPDATE
-    ),
-    PanasonicBinarySensorDescription(
-        key=AIRPURIFIER_HEAP_REPLACE_NOTIFY,
-        name="HEAP Filter Replace",
-        icon='mdi:filter-variant-remove'
-    )
-)
-
-DEHUMIDIFIER_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
-    PanasonicBinarySensorDescription(
-        key=ENTITY_UPDATE,
-        name="版本更新",
-        icon='mdi:package-up',
-        device_class=BinarySensorDeviceClass.UPDATE
-    ),
-    PanasonicBinarySensorDescription(
-        key=DEHUMIDIFIER_WATER_TANK_STATUS,
-        name="水箱",
-        icon='mdi:cup-water'
-    )
-)
-
-DRYER_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
-    PanasonicBinarySensorDescription(
-        key=ENTITY_UPDATE,
-        name="版本更新",
-        icon='mdi:package-up',
-        device_class=BinarySensorDeviceClass.UPDATE
-    ),
-    PanasonicBinarySensorDescription(
-        key=ENTITY_EMPTY,
-        name="空",
-        icon='mdi:cog'
-    )
-)
-
-ERV_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
-    PanasonicBinarySensorDescription(
-        key=ENTITY_UPDATE,
-        name="版本更新",
-        icon='mdi:package-up',
-        device_class=BinarySensorDeviceClass.UPDATE
-    ),
-    PanasonicBinarySensorDescription(
-        key=ENTITY_EMPTY,
-        name="空",
-        icon='mdi:cog'
-    )
-)
-
-FRIDGE_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
-    PanasonicBinarySensorDescription(
-        key=ENTITY_UPDATE,
-        name="版本更新",
-        icon='mdi:package-up',
-        device_class=BinarySensorDeviceClass.UPDATE
-    ),
-    PanasonicBinarySensorDescription(
-        key=ENTITY_EMPTY,
-        name="空",
-        icon='mdi:cog'
-    )
-)
-
-LIGHT_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
-    PanasonicBinarySensorDescription(
-        key=ENTITY_UPDATE,
-        name="版本更新",
-        icon='mdi:package-up',
-        device_class=BinarySensorDeviceClass.UPDATE
-    ),
-    PanasonicBinarySensorDescription(
-        key=ENTITY_EMPTY,
-        name="空",
-        icon='mdi:cog'
-    )
-)
-
-WASHING_MACHINE_BINARY_SENSORS: tuple[PanasonicBinarySensorDescription, ...] = (
-    PanasonicBinarySensorDescription(
-        key=ENTITY_UPDATE,
-        name="版本更新",
-        icon='mdi:package-up',
-        device_class=BinarySensorDeviceClass.UPDATE
-    ),
-    PanasonicBinarySensorDescription(
-        key=ENTITY_EMPTY,
-        name="空",
-        icon='mdi:cog'
-    )
-)
-
-AIRPURIFIER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
-    PanasonicNumberDescription(
-        key=AIRPURIFIER_TIMER_ON,
-        name="定時開啟",
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog-outline',
-        native_min_value=0,
-        native_max_value=24,
-        native_step=1,
-        entity_registry_enabled_default=False
-    ),
-    PanasonicNumberDescription(
-        key=AIRPURIFIER_TIMER_OFF,
-        name="定時關閉",
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog',
-        native_min_value=0,
-        native_max_value=24,
-        native_step=1,
-        entity_registry_enabled_default=False
-    )
-)
-
-DEHUMIDIFIER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
-    PanasonicNumberDescription(
-        key=DEHUMIDIFIER_TIMER_ON,
-        name="定時開啟",
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog-outline',
-        native_min_value=0,
-        native_max_value=12,
-        native_step=1,
-        entity_registry_enabled_default=False
-    ),
-    PanasonicNumberDescription(
-        key=DEHUMIDIFIER_TIMER_OFF,
-        name="定時關閉",
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog',
-        native_min_value=0,
-        native_max_value=12,
-        native_step=1,
-        entity_registry_enabled_default=False
-    )
-)
-
-DRYER_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
-    PanasonicNumberDescription(
-        key=DRYER_OPERATING_TIME,
-        name="運轉時間",
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog-outline',
-        native_min_value=0,
-        native_max_value=12,
-        native_step=1,
-        entity_registry_enabled_default=False
-    )
-)
-
-ERV_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
-    PanasonicNumberDescription(
-        key=ERV_TARGET_TEMPERATURE,
-        name="目標溫度",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:thermometer',
-        native_min_value=-128,
-        native_max_value=127,
-        native_step=1,
-        entity_registry_enabled_default=False
-    ),
-    PanasonicNumberDescription(
-        key=ERV_TIMER_ON,
-        name="定時開啟",
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog',
-        native_min_value=0,
-        native_max_value=1440,
-        native_step=1,
-        entity_registry_enabled_default=False
-    )
-)
-
-LIGHT_NUMBERS: tuple[PanasonicNumberDescription, ...] = (
-    PanasonicNumberDescription(
-        key=LIGHT_CHANNEL_1_TIMER_ON,
-        name="頻道1定時開啟",
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog-outline',
-        native_min_value=0,
-        native_max_value=24,
-        native_step=1,
-        entity_registry_enabled_default=False
-    ),
-    PanasonicNumberDescription(
-        key=LIGHT_CHANNEL_1_TIMER_OFF,
-        name="頻道1定時關閉",
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog',
-        native_min_value=0,
-        native_max_value=24,
-        native_step=1,
-        entity_registry_enabled_default=False
-    ),
-    PanasonicNumberDescription(
-        key=LIGHT_CHANNEL_2_TIMER_ON,
-        name="頻道2定時開啟",
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog-outline',
-        native_min_value=0,
-        native_max_value=24,
-        native_step=1,
-        entity_registry_enabled_default=False
-    ),
-    PanasonicNumberDescription(
-        key=LIGHT_CHANNEL_2_TIMER_OFF,
-        name="頻道2定時關閉",
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog',
-        native_min_value=0,
-        native_max_value=24,
-        native_step=1,
-        entity_registry_enabled_default=False
-    ),
-    PanasonicNumberDescription(
-        key=LIGHT_CHANNEL_3_TIMER_ON,
-        name="頻道3定時開啟",
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog-outline',
-        native_min_value=0,
-        native_max_value=24,
-        native_step=1,
-        entity_registry_enabled_default=False
-    ),
-    PanasonicNumberDescription(
-        key=LIGHT_CHANNEL_3_TIMER_OFF,
-        name="頻道3定時關閉",
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:timer-cog',
-        native_min_value=0,
-        native_max_value=24,
-        native_step=1,
-        entity_registry_enabled_default=False
-    )
-)
-
-AIRPURIFIER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
-    PanasonicSelectDescription(
-        key=AIRPURIFIER_LIGHT,
-        name="燈光",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:brightness-5',
-        options=["Light", "Dark", "Off"],
-        options_value=["0", "1", "2"]
-    ),
-    PanasonicSelectDescription(
-        key=AIRPURIFIER_OPERATING_MODE,
-        name="風扇模式",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:fan',
-        options=["Auto", "Mute", "Week", "Middle", "Strong"],
-        options_value=["0", "1", "2", "3", "4"]
-    ),
-    PanasonicSelectDescription(
-        key=AIRPURIFIER_RESERVED,
-        name="Reserved",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:help',
-        options=[],
-        options_value=[]
-    )
-)
-
-DEHUMIDIFIER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
-    PanasonicSelectDescription(
-        key=DEHUMIDIFIER_FAN_SPEED,
-        name="風速",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:fan',
-        options=["Auto", "Slience", "Standard", "Speed"],
-        options_value=["0", "1", "2", "3"],
-    ),
-    PanasonicSelectDescription(
-        key=DEHUMIDIFIER_FAN_MODE,
-        name="風扇模式",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:fan-speed-1',
-        options=["Fixed", "Down", "Up", "Both", "Side"],
-        options_value=["0", "1", "2", "3", "4"]
-    )
-)
-
-DRYER_SELECTS: tuple[PanasonicSelectDescription, ...] = (
-    PanasonicSelectDescription(
-        key=DRYER_OPERATING_STATUS,
-        name="運轉狀態",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:cog',
-        options=["Stopping", "Pause", "Working"],
-        options_value=["0", "1", "2"]
-    ),
-    PanasonicSelectDescription(
-        key=DRYER_HEATING_STATUS,
-        name="加熱狀態",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:cog',
-        options=["Weak", "Strong"],
-        options_value=["0", "1"]
-    ),
-    PanasonicSelectDescription(
-        key=DRYER_OPERATING_MODE,
-        name="運轉模式",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:hanger',
-        options=["Standard", "Thick Clothes", "Long Time", "Short Time", "Reserved"],
-        options_value=["0", "1", "2", "3", "4"]
-    ),
-    PanasonicSelectDescription(
-        key=DRYER_OPERATING_MODE_NEW,
-        name="運轉模式",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:hanger'
-    ),
-    PanasonicSelectDescription(
-        key=DRYER_STATUS,
-        name="烘乾狀態",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:cog',
-        options=["Fan Only", "Drying"],
-        options_value=["0", "1"]
-    ),
-    PanasonicSelectDescription(
-        key=DRYER_FAN_SPEED,
-        name="風速",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:fan',
-        options=["Low", "Middle", "High"],
-        options_value=["0", "1", "2", "3"],
-    )
-)
-
-ERV_SELECTS: tuple[PanasonicSelectDescription, ...] = (
-    PanasonicSelectDescription(
-        key=ERV_VENTILATE_MODE,
-        name="換氣模式",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:home-thermometer',
-        options=["Auto", "Ventilate", "Normal"],
-        options_value=["0", "1", "2"],
-    ),
-    PanasonicSelectDescription(
-        key=ERV_PRE_HEAT_COOL,
-        name="Pre Head/Cool",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:home-thermometer-outline',
-        options=["Disabled", "30min", "60min"],
-        options_value=["0", "1", "2"]
-    )
-)
-
-FRIDGE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
-    PanasonicSelectDescription(
-        key=FRIDGE_FREEZER_MODE,
-        name="Freezer mode",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:fridge-top',
-        options=["Weak", "Medium", "Strong"],
-        options_value=["0", "2", "4"],
-    ),
-    PanasonicSelectDescription(
-        key=FRIDGE_CHAMBER_MODE,
-        name="Chamber Mode",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:fridge-bottom',
-        options=["Weak", "Medium", "Strong"],
-        options_value=["0", "2", "4"],
-    ),
-    PanasonicSelectDescription(
-        key=FRIDGE_THAW_MODE,
-        name="Thaw Mode",
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:fridge-outline',
-        options=["Weak", "Medium", "Strong"],
-        options_value=["0", "2", "4"],
-    )
-)
-
-WASHING_MACHINE_HDH_SELECTS: tuple[PanasonicSelectDescription, ...] = (
-    PanasonicSelectDescription(
-        key=WASHING_MACHINE_TIMER,
-        name="預約時間設定",
-        entity_category=EntityCategory.CONFIG,
-        icon="mdi:clock-start",
-        options=[],
-        options_value=[]
-    ),
-    PanasonicSelectDescription(
-        key=WASHING_MACHINE_60,
-        name="時間調整",
-        entity_category=EntityCategory.CONFIG,
-        icon="mdi:clock-edit-outline",
-        options=[],
-        options_value=[]
-    ),
-    PanasonicSelectDescription(
-        key=WASHING_MACHINE_POSTPONE_DRYING_TIME,
-        name="延後晾衣設定",
-        entity_category=EntityCategory.CONFIG,
-        icon="mdi:hanger",
-        options=[],
-        options_value=[]
-    ),
-    PanasonicSelectDescription(
-        key=WASHING_MACHINE_PROGRESS_NEW,
-        name="行程設定",
-        entity_category=EntityCategory.CONFIG,
-        icon="mdi:washing-machine",
-        options=[],
-        options_value=[]
-    )
-)
-
-WASHING_MACHINE_SELECTS_BY_MODEL = {
-    # Only HDH was confirmed against the remote CommandList. Do not apply these
-    # writable selects to DDH/DW/MDH until their CommandList/ranges are checked.
-    "HDH": WASHING_MACHINE_HDH_SELECTS,
-}
-
-WASHING_MACHINE_SELECTS: tuple[PanasonicSelectDescription, ...] = ()
-
-
-AIRPURIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
-    PanasonicSensorDescription(
-        key=AIRPURIFIER_AIR_QUALITY,
-        name="空氣品質",
-        device_class= SensorDeviceClass.AQI,
-        icon='mdi:leaf'
-    ),
-    PanasonicSensorDescription(
-        key=AIRPURIFIER_PM25,
-        name="PM2.5",
-        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.PM25,
-        icon="mdi:chemical-weapon"
-    ),
-    PanasonicSensorDescription(
-        key=AIRPURIFIER_FORMALDEHYDE,
-        name="Formaldehyde",
-        native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION,
-        state_class=SensorStateClass.MEASUREMENT,
-#        device_class=SensorDeviceClass.PM25,
-        icon="mdi:chemical-weapon"
-    ),
-    PanasonicSensorDescription(
-        key=AIRPURIFIER_RUNNING_TIME,
-        name="運行時間",
-        native_unit_of_measurement=UnitOfTime.MINUTES,
-        state_class=SensorStateClass.MEASUREMENT,
-        icon="mdi:clock-outline"
-    ),
-    PanasonicSensorDescription(
-        key=AIRPURIFIER_ERROR_CODE,
-        name="錯誤代碼",
-        icon="mdi:alert-circle"
-    ),
-    PanasonicSensorDescription(
-        key=AIRPURIFIER_ENERGY,
-        name="累積用電量",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        device_class=SensorDeviceClass.ENERGY,
-        icon="mdi:flash"
-    )
-)
-
-DEHUMIDIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
-    PanasonicSensorDescription(
-        key=DEHUMIDIFIER_HUMIDITY_INDOOR,
-        name="室內濕度",
-        native_unit_of_measurement=PERCENTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.HUMIDITY,
-        icon="mdi:water-percent"
-    ),
-    PanasonicSensorDescription(
-        key=DEHUMIDIFIER_PM10,
-        name="PM10",
-        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.PM10,
-        icon="mdi:chemical-weapon"
-    ),
-    PanasonicSensorDescription(
-        key=DEHUMIDIFIER_PM25,
-        name="PM2.5",
-        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.PM25,
-        icon="mdi:chemical-weapon"
-    ),
-    PanasonicSensorDescription(
-        key=DEHUMIDIFIER_ENERGY,
-        name="累積用電量",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        device_class=SensorDeviceClass.ENERGY,
-        icon="mdi:flash"
-    ),
-    PanasonicSensorDescription(
-        key=DEHUMIDIFIER_ERROR_CODE,
-        name="錯誤代碼",
-        icon="mdi:alert-circle"
-    )
-)
-
-DRYER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
-    PanasonicSensorDescription(
-        key=DRYER_OPERATING_STATUS_NEW,
-        name="運轉狀態",
-        icon="mdi:tumble-dryer"
-    ),
-    PanasonicSensorDescription(
-        key=DRYER_APPOINTMENT_REMAINING_TIME,
-        name="剩餘時間",
-        icon="mdi:timer-outline"
-    ),
-    PanasonicSensorDescription(
-        key=DRYER_ERROR_CODE,
-        name="錯誤代碼",
-        icon="mdi:alert-circle"
-    )
-)
-
-ERV_SENSORS: tuple[PanasonicSensorDescription, ...] = (
-    PanasonicSensorDescription(
-        key=ERV_TEMPERATURE_IN,
-        name="進風溫度",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer"
-    ),
-    PanasonicSensorDescription(
-        key=ERV_TEMPERATURE_OUT,
-        name="出風溫度",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer"
-    ),
-    PanasonicSensorDescription(
-        key=ERV_ENERGY,
-        name="累積用電量",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        device_class=SensorDeviceClass.ENERGY,
-        icon="mdi:flash"
-    ),
-    PanasonicSensorDescription(
-        key=ERV_ERROR_CODE,
-        name="錯誤代碼",
-        icon="mdi:alert-circle"
-    )
-)
-
-FRIDGE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
-    PanasonicSensorDescription(
-        key=FRIDGE_FREEZER_TEMPERATURE,
-        name="冷凍室溫度",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon='mdi:fridge-top'
-    ),
-    PanasonicSensorDescription(
-        key=FRIDGE_CHAMBER_TEMPERATURE,
-        name="冷藏室溫度",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:fridge-bottom"
-    ),
-    PanasonicSensorDescription(
-        key=FRIDGE_ENERGY,
-        name="累積用電量",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        device_class=SensorDeviceClass.ENERGY,
-        icon="mdi:flash"
-    ),
-    PanasonicSensorDescription(
-        key=FRIDGE_THAW_TEMPERATURE,
-        name="解凍溫度",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        icon="mdi:fridge-outline"
-    ),
-    PanasonicSensorDescription(
-        key=FRIDGE_ERROR_CODE,
-        name="錯誤代碼",
-        icon="mdi:alert-circle"
-    ),
-    PanasonicSensorDescription(
-        key=FRIDGE_ERROR_CODE_JP,
-        name="錯誤代碼",
-        icon="mdi:alert-circle"
-    ),
-    PanasonicSensorDescription(
-        key=ENTITY_DOOR_OPENS,
-        name="每月開門次數",
-        icon="mdi:information-slab-symbol"
-    ),
-    PanasonicSensorDescription(
-        key=ENTITY_MONTHLY_ENERGY,
-        name="每月用電量",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        device_class=SensorDeviceClass.ENERGY,
-        icon="mdi:flash"
-    )
-)
-
-LIGHT_SENSORS: tuple[PanasonicSensorDescription, ...] = (
-    PanasonicSensorDescription(
-        key=LIGHT_OPERATION_STATE,
-        name="運作模式",
-        icon='mdi:dip-switch',
-#        options=["All Off", "Channel 1 On", "Channel 2 On", "Channel 1, 2 On", "Channel 3 On", "Channel 1, 3 On", "Channel 2, 3 On", "All On"],
-#        options_value=["0", "1", "2", "3", "4", "5", "6", "7"],
-    ),
-    PanasonicSensorDescription(
-        key=LIGHT_RESERVED,
-        name="Reserved",
-        icon='mdi:help'
-    )
-)
-
-WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_REMAING_WASH_TIME,
-        name="預估洗衣完成時間",
-        icon="mdi:clock"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_TIMER,
-        name="預約時間設定",
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:clock-start"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
-        name="預約洗衣開始時間",
-        icon="mdi:clock-alert-outline"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_TIMER_REMAINING_TIME,
-        name="預約洗衣完成時間",
-        icon="mdi:clock-outline"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_ERROR_CODE,
-        name="異常代碼",
-        icon="mdi:alert-circle"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_60,
-        name="時間調整",
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:clock-edit-outline"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_POSTPONE_DRYING_TIME,
-        name="延後晾衣設定",
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:hanger"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_CURRENT_MODE,
-        name="目前洗衣行程",
-        device_class=SensorDeviceClass.ENUM,
-        icon="mdi:washing-machine"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_CURRENT_PROGRESS,
-        name="洗衣行程設定",
-        device_class=SensorDeviceClass.ENUM,
-        icon="mdi:progress-helper"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_PROGRESS_NEW,
-        name="行程設定",
-        device_class=SensorDeviceClass.ENUM,
-        icon="mdi:washing-machine"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_POSTPONE_DRYING,
-        name="延後晾衣狀態(raw)",
-        icon="mdi:hanger"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_OPERATING_STATUS,
-        name="運轉情報",
-        device_class=SensorDeviceClass.ENUM,
-        icon="mdi:washing-machine"
-    ),
-    PanasonicSensorDescription(
-        key=ENTITY_WASH_TIMES,
-        name="當月洗衣次數",
-        icon="mdi:information-slab-symbol"
-    ),
-    PanasonicSensorDescription(
-        key=ENTITY_WATER_USED,
-        name="當月用水量",
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfVolume.LITERS,
-        icon="mdi:water"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_ENERGY,
-        name="累積用電量",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        device_class=SensorDeviceClass.ENERGY,
-        icon="mdi:flash"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_REMOTE_CONTROL,
-        name="遠端遙控",
-        device_class=SensorDeviceClass.ENUM,
-        icon='mdi:cog'
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_DETERGENT_AMOUNT,
-        name="洗劑投入設定",
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement="mL",
-        icon="mdi:bottle-tonic-outline"
-    ),
-    PanasonicSensorDescription(
-        key=WASHING_MACHINE_SOFTENER_AMOUNT,
-        name="柔軟劑投入設定",
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement="mL",
-        icon="mdi:bottle-tonic-plus-outline"
-    )
-)
-
-WEIGHT_PLATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
-    PanasonicSensorDescription(
-        key=WEIGHT_PLATE_FOOD_NAME,
-        name="食材名稱",
-        icon="mdi:food"
-    ),
-    PanasonicSensorDescription(
-        key=WEIGHT_PLATE_BUY_DATE,
-        name="購買日期",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        icon="mdi:clock"
-    ),
-    PanasonicSensorDescription(
-        key=WEIGHT_PLATE_DUE_DATE,
-        name="到期日",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        icon="mdi:clock-outline"
-    ),
-    PanasonicSensorDescription(
-        key=WEIGHT_PLATE_MANAGEMENT_MODE,
-        name="Management Mode",
-        icon="mdi:cog"
-    ),
-    PanasonicSensorDescription(
-        key=WEIGHT_PLATE_MANAGEMENT_VALUE,
-        name="Management Value",
-        icon="mdi:cog"
-    ),
-    PanasonicSensorDescription(
-        key=WEIGHT_PLATE_AMOUNT_MAX,
-        name="最大數值",
-        icon="mdi:cog"
-    ),
-    PanasonicSensorDescription(
-        key=WEIGHT_PLATE_COMMUNICATION_MODE,
-        name="Communication Mode",
-        icon="mdi:cog"
-    ),
-    PanasonicSensorDescription(
-        key=WEIGHT_PLATE_COMMUNICATION_TIME,
-        name="Communication Time",
-        icon="mdi:clock-outline"
-    ),
-    PanasonicSensorDescription(
-        key=WEIGHT_PLATE_TOTAL_WEIGHT,
-        name="總重量",
-        device_class=SensorDeviceClass.WEIGHT,
-        native_unit_of_measurement=UnitOfMass.GRAMS,
-        state_class=SensorStateClass.MEASUREMENT,
-        icon="mdi:weight-gram"
-    ),
-    PanasonicSensorDescription(
-        key=WEIGHT_PLATE_RESTORE_WEIGHT,
-        name="還原重量",
-        device_class=SensorDeviceClass.WEIGHT,
-        native_unit_of_measurement=UnitOfMass.GRAMS,
-        state_class=SensorStateClass.MEASUREMENT,
-        icon="mdi:weight-gram"
-    ),
-    PanasonicSensorDescription(
-        key=WEIGHT_PLATE_LOW_BATTERY,
-        name="低電量",
-        icon="mdi:battery-alert"
-    )
-)
-
-AIRPURIFIER_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
-    PanasonicSwitchDescription(
-        key=AIRPURIFIER_RESET_FILTER_NOTIFY,
-        name="Reset Filter Notify",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:filter-remove'
-    ),
-    PanasonicSwitchDescription(
-        key=AIRPURIFIER_BUZZER,
-        name="蜂鳴器",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:volume-high'
-    ),
-    PanasonicSwitchDescription(
-        key=AIRPURIFIER_PET_MODE,
-        name="寵物模式",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:paw'
-    )
-)
-
-DEHUMIDIFIER_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
-    PanasonicSwitchDescription(
-        key=DEHUMIDIFIER_AIRFRESH_MODE,
-        name=" nanoe™ X",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:atom-variant'
-    ),
-    PanasonicSwitchDescription(
-        key=DEHUMIDIFIER_BUZZER,
-        name="蜂鳴器",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:volume-high'
-    )
-)
-
-FRIDGE_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
-    PanasonicSwitchDescription(
-        key=FRIDGE_DEFROST_SETTING,
-        name=" nanoe™ X",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:snowflake-melt'
-    ),
-    PanasonicSwitchDescription(
-        key=FRIDGE_ECO,
-        name="ECO",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:sprout'
-    ),
-    PanasonicSwitchDescription(
-        key=FRIDGE_NANOEX,
-        name=" nanoe™ X",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:atom-variant'
-    ),
-    PanasonicSwitchDescription(
-        key=FRIDGE_STOP_ICE_MAKING,
-        name="Stop Ice Making",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:snowflake'
-    ),
-    PanasonicSwitchDescription(
-        key=FRIDGE_FAST_ICE_MAKING,
-        name="Fast Ice Making",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:snowflake'
-    ),
-    PanasonicSwitchDescription(
-        key=FRIDGE_FRESH_QUICK_FREZZE,
-        name="Fresh Quick Freeze",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:snowflake-check'
-    ),
-    PanasonicSwitchDescription(
-        key=FRIDGE_WINTER_MDOE,
-        name="Winter Mode",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:snowman'
-    ),
-    PanasonicSwitchDescription(
-        key=FRIDGE_SHOPPING_MODE,
-        name="採買模式",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:shopping'
-    ),
-    PanasonicSwitchDescription(
-        key=FRIDGE_GO_OUT_MODE,
-        name="外出模式",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:logout'
-    )
-)
-
-LIGHT_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
-    PanasonicSwitchDescription(
-        key=LIGHT_POWER,
-        name="Switch",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:toggle-switch'
-    ),
-    PanasonicSwitchDescription(
-        key=LIGHT_MAINTAIN_MODE,
-        name="Maintain Mode",
-        device_class=SwitchDeviceClass.SWITCH,
-        entity_category=EntityCategory.CONFIG,
-        icon='mdi:swap-horizontal'
-    ),
-    PanasonicSwitchDescription(
-        key=LIGHT_RESERVED,
-        name="Reserved",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:help'
-    )
-)
-
-WASHING_MACHINE_SWITCHES: tuple[PanasonicSwitchDescription, ...] = (
-    PanasonicSwitchDescription(
-        key=WASHING_MACHINE_ENABLE,
-        name="開始洗衣",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:play-pause'
-    ),
-    PanasonicSwitchDescription(
-        key=WASHING_MACHINE_WARM_WATER,
-        name="溫水設定",
-        device_class=SwitchDeviceClass.SWITCH,
-        icon='mdi:heat-wave'
-    )
-)
 
 SAA_BINARY_SENSORS = {
     DEVICE_TYPE_AIRPURIFIER: AIRPURIFIER_BINARY_SENSORS,

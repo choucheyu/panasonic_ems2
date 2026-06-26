@@ -8,6 +8,27 @@ from pathlib import Path
 from typing import Any, Callable
 
 
+DESCRIPTION_MODULE_BY_PREFIX = {
+    "AIRPURIFIER_": "airpurifier",
+    "CLIMATE_": "climate",
+    "DEHUMIDIFIER_": "dehumidifier",
+    "DRYER_": "dryer",
+    "ERV_": "erv",
+    "FRIDGE_": "fridge",
+    "LIGHT_": "light",
+    "WASHING_MACHINE_": "washing_machine",
+    "WEIGHT_PLATE_": "weight_plate",
+}
+
+
+def panasonic_description_source_path(core_path: Path, tuple_name: str) -> Path:
+    """Return the source module that owns an appliance entity-description tuple."""
+    for prefix, module_name in DESCRIPTION_MODULE_BY_PREFIX.items():
+        if tuple_name.startswith(prefix):
+            return core_path / "entity_descriptions" / f"{module_name}.py"
+    return core_path / "const.py"
+
+
 def eval_literalish(node: ast.AST, env: dict[str, Any]) -> Any:
     """Evaluate the small literal/name subset used by integration constants."""
     if isinstance(node, ast.Constant):
@@ -23,6 +44,9 @@ def eval_literalish(node: ast.AST, env: dict[str, Any]) -> Any:
 
     if isinstance(node, ast.Tuple):
         return tuple(eval_literalish(item, env) for item in node.elts)
+
+    if isinstance(node, ast.Set):
+        return {eval_literalish(item, env) for item in node.elts}
 
     if isinstance(node, ast.Dict):
         parsed: dict[Any, Any] = {}
@@ -87,15 +111,23 @@ def load_constant_assignments(path: Path, _seen: set[Path] | None = None) -> dic
                 env[alias.asname or alias.name] = imported_env[alias.name]
             continue
 
-        if not isinstance(node, ast.Assign):
+        value_node: ast.AST | None = None
+        if isinstance(node, ast.Assign):
+            names = [target.id for target in node.targets if isinstance(target, ast.Name)]
+            value_node = node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            names = [node.target.id]
+            value_node = node.value
+        else:
             continue
 
-        names = [target.id for target in node.targets if isinstance(target, ast.Name)]
         if not names:
             continue
 
         try:
-            value = eval_literalish(node.value, env)
+            if value_node is None:
+                continue
+            value = eval_literalish(value_node, env)
         except (KeyError, TypeError):
             continue
 

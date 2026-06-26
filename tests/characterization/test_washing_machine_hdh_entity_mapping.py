@@ -20,13 +20,19 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 
-from tests.helpers.source_parsing import load_constant_assignments, load_method_function
+from tests.helpers.source_parsing import (
+    load_constant_assignments,
+    load_method_function,
+    panasonic_description_source_path,
+)
 from tests.p0_known_bugs.test_climate_writable_descriptions_have_set_mappings import (
     _description_keys,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-CONST_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "const.py"
+CORE_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core"
+CONST_PATH = CORE_PATH / "const.py"
+WASHING_MACHINE_CONSTANTS_PATH = CORE_PATH / "constants" / "washing_machine.py"
 CLOUD_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "cloud.py"
 SENSOR_PATH = ROOT / "custom_components" / "panasonic_ems2" / "sensor.py"
 
@@ -59,8 +65,9 @@ def _eval_description_value(node: ast.AST, env: dict[str, object]) -> Any:
 
 
 def _description_metadata(tuple_name: str) -> dict[str, dict[str, Any]]:
-    source = CONST_PATH.read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=str(CONST_PATH))
+    source_path = panasonic_description_source_path(CORE_PATH, tuple_name)
+    source = source_path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(source_path))
     env = _constants()
     descriptions: dict[str, dict[str, Any]] = {}
 
@@ -206,7 +213,7 @@ def test_hdh_supplemental_display_keys_include_monthly_energy_and_update_status(
 
 def test_uncertain_hdh_keys_stay_commented_with_traditional_chinese_rationale() -> None:
     """Unconfirmed keys must stay disabled until mapped to official app behavior."""
-    source = CONST_PATH.read_text(encoding="utf-8")
+    source = WASHING_MACHINE_CONSTANTS_PATH.read_text(encoding="utf-8")
 
     assert "以下 key 目前不是 HDH 遠端 CommandList 主包，且語意或穩定性尚未確認" in source
     assert "# WASHING_MACHINE_OPERATING_STATUS_OLD" in source
