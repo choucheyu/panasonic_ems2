@@ -158,16 +158,17 @@ class PanasonicSmartHome(object):
         data=None,
     ):
         """Shared request wrapper preserving the PanasonicSmartHome public seam."""
-        response = await self._api_client.request(
-            method=method,
-            headers=headers,
-            endpoint=endpoint,
-            params=params,
-            data=data,
-        )
-        self._api_counts = self._api_client.api_counts
-        self._api_counts_per_hour = self._api_client.api_counts_per_hour
-        return response
+        try:
+            return await self._api_client.request(
+                method=method,
+                headers=headers,
+                endpoint=endpoint,
+                params=params,
+                data=data,
+            )
+        finally:
+            self._api_counts = self._api_client.api_counts
+            self._api_counts_per_hour = self._api_client.api_counts_per_hour
 
     @property
     def token(self) -> bool:

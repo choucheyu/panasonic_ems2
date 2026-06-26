@@ -10,9 +10,12 @@ import sys
 import types
 from http import HTTPStatus
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
+
+from tests.helpers.source_parsing import load_method_function
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "custom_components" / "panasonic_ems2"
@@ -74,6 +77,14 @@ class _Session:
         if self.raises is not None:
             raise self.raises
         return self.response
+
+
+class _RaisingApiClient:
+    api_counts = 7
+    api_counts_per_hour = 3
+
+    async def request(self, **_kwargs):
+        raise RuntimeError("boom")
 
 
 def _cloud_method_node(method_name: str) -> ast.FunctionDef | ast.AsyncFunctionDef:
@@ -248,6 +259,26 @@ def test_cloud_uses_api_client_and_token_store_seams_instead_of_owning_http_logi
     assert init_source is not None
     assert "PanasonicApiClient(" in init_source
     assert "PanasonicTokenStore(" in init_source
+
+
+def test_cloud_request_syncs_api_counters_even_when_client_raises() -> None:
+    request = load_method_function(
+        CLOUD,
+        class_name="PanasonicSmartHome",
+        method_name="request",
+        globals_env={},
+    )
+    client = SimpleNamespace(
+        _api_client=_RaisingApiClient(),
+        _api_counts=0,
+        _api_counts_per_hour=0,
+    )
+
+    with pytest.raises(RuntimeError):
+        asyncio.run(request(client, "GET", headers={}, endpoint="https://example.invalid/api"))
+
+    assert client._api_counts == 7
+    assert client._api_counts_per_hour == 3
 
 
 def test_token_store_module_defines_load_save_account_count_and_stop_listener_seams() -> None:
