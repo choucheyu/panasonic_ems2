@@ -34,11 +34,11 @@ def test_manifest_identity_matches_taiwan_fork() -> None:
 def test_hacs_metadata_matches_taiwan_fork() -> None:
     hacs = _load_json(ROOT / "hacs.json")
 
-    assert hacs["name"] == "Panasonic Smart IoT TW"
-    assert hacs["domain"] == "panasonic_ems2"
-    assert hacs["documentation"] == REPO_URL
-    assert hacs["issue_tracker"] == ISSUES_URL
-    assert hacs["render_readme"] is True
+    assert hacs == {
+        "name": "Panasonic Smart IoT TW",
+        "homeassistant": "2023.11.0",
+        "render_readme": True,
+    }
 
 
 def test_translation_files_parse_and_cover_required_sections() -> None:

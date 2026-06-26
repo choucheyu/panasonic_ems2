@@ -1,8 +1,5 @@
 {
   "name": "Panasonic Smart IoT TW",
   "homeassistant": "2023.11.0",
-  "render_readme": true,
-  "domain": "panasonic_ems2",
-  "documentation": "https://github.com/choucheyu/panasonic_ems2",
-  "issue_tracker": "https://github.com/choucheyu/panasonic_ems2/issues"
+  "render_readme": true
 }
