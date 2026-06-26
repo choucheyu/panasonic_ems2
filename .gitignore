@@ -4,3 +4,4 @@ secrets.py
 *.pyc
 .DS_Store
 .vscode
+.hermes/observations/
