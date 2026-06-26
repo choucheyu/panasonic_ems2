@@ -6,6 +6,7 @@ import ast
 import importlib.util
 import sys
 import textwrap
+import types
 from pathlib import Path
 from typing import Any, Callable
 
@@ -166,19 +167,44 @@ def load_method_function(
     raise LookupError(f"{class_name}.{method_name} not found in {path}")
 
 
-def add_capability_runtime_globals(env: dict[str, Any]) -> dict[str, Any]:
-    """Add capability-registry runtime helpers for extracted cloud methods."""
+def _load_core_module(module_name: str):
+    """Load a core module without importing the HA-dependent integration package."""
     repo_root = Path(__file__).resolve().parents[2]
-    capabilities_path = repo_root / "custom_components" / "panasonic_ems2" / "core" / "capabilities.py"
-    spec = importlib.util.spec_from_file_location(
-        "panasonic_capabilities_runtime_test",
-        capabilities_path,
-    )
+    package_paths = {
+        "custom_components": repo_root / "custom_components",
+        "custom_components.panasonic_ems2": repo_root / "custom_components" / "panasonic_ems2",
+        "custom_components.panasonic_ems2.core": (
+            repo_root / "custom_components" / "panasonic_ems2" / "core"
+        ),
+    }
+    for package_name, package_path in package_paths.items():
+        module = sys.modules.get(package_name)
+        if module is None:
+            module = types.ModuleType(package_name)
+            module.__package__ = package_name
+            module.__path__ = [str(package_path)]  # type: ignore[attr-defined]
+            sys.modules[package_name] = module
+
+    qualified_name = f"custom_components.panasonic_ems2.core.{module_name}"
+    if qualified_name in sys.modules:
+        return sys.modules[qualified_name]
+
+    module_path = package_paths["custom_components.panasonic_ems2.core"] / f"{module_name}.py"
+    spec = importlib.util.spec_from_file_location(qualified_name, module_path)
     if spec is None or spec.loader is None:
-        raise RuntimeError(f"Unable to load capabilities module from {capabilities_path}")
-    capabilities = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = capabilities
-    spec.loader.exec_module(capabilities)
+        raise RuntimeError(f"Unable to load core module from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[qualified_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def add_capability_runtime_globals(env: dict[str, Any]) -> dict[str, Any]:
+    """Add capability-registry/runtime helpers for extracted cloud methods."""
+    capabilities = _load_core_module("capabilities")
+    cloud_commands = _load_core_module("cloud_commands")
+    cloud_status = _load_core_module("cloud_status")
+    user_info_requests = _load_core_module("user_info_requests")
 
     climate = str(env["DEVICE_TYPE_CLIMATE"])
     runtime_env = dict(env)
@@ -200,6 +226,16 @@ def add_capability_runtime_globals(env: dict[str, Any]) -> dict[str, Any]:
             "range_lookup_models": capabilities.range_lookup_models,
             "set_command_id": capabilities.set_command_id,
             "supplemental_commands_for_model": capabilities.supplemental_commands_for_model,
+            "build_light_device_command_types": cloud_commands.build_light_device_command_types,
+            "build_offline_information": cloud_status.build_offline_information,
+            "build_polling_command_types": cloud_commands.build_polling_command_types,
+            "build_user_info_statistics_requests": (
+                user_info_requests.build_user_info_statistics_requests
+            ),
+            "get_supplemental_keys": cloud_commands.get_supplemental_keys,
+            "merge_supplemental_status": cloud_commands.merge_supplemental_status,
+            "normalize_command_status": cloud_status.normalize_command_status,
+            "refactor_device_information": cloud_status.refactor_device_information,
         }
     )
     return runtime_env

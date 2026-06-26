@@ -25,13 +25,23 @@ from ..api.token_store import PanasonicTokenStore
 from .capabilities import (
     command_name_override,
     command_range_override,
-    commands_for_model,
     range_lookup_models,
     set_command_id,
-    supplemental_commands_for_model,
+)
+from .cloud_commands import (
+    build_light_device_command_types,
+    build_polling_command_types,
+    get_supplemental_keys,
+    merge_supplemental_status,
+)
+from .cloud_status import (
+    build_offline_information,
+    normalize_command_status,
+    refactor_device_information,
 )
 from .command_metadata import refactor_command_metadata
 from .statistics_builder import build_user_info_external_statistics_rows
+from .user_info_requests import build_user_info_statistics_requests
 from .user_info_series import parse_user_info_series
 from .const import (
     APP_TOKEN,
@@ -42,8 +52,6 @@ from .const import (
     CONF_REFRESH_TOKEN_TIMEOUT,
     CAPABILITY_REGISTRY,
     MODEL_JP_TYPES,
-    CLIMATE_PM25,
-    DEVICE_TYPE_CLIMATE,
     DEVICE_TYPE_DEHUMIDIFIER,
     DEVICE_TYPE_FRIDGE,
     DEVICE_TYPE_LIGHT,
@@ -56,24 +64,11 @@ from .const import (
     ENTITY_UPDATE,
     ENTITY_UPDATE_INFO,
     USER_INFO_SERIES_REFRESH_SECONDS,
-    DEHUMIDIFIER_PM25,
-    FRIDGE_FREEZER_TEMPERATURE,
-    FRIDGE_THAW_TEMPERATURE,
-    FRIDGE_XGS_COMMANDS,
     HA_USER_AGENT,
-    LIGHT_OPERATION_STATE,
-    LIGHT_CHANNEL_1_TIMER_ON,
-    LIGHT_CHANNEL_1_TIMER_OFF,
-    LIGHT_CHANNEL_2_TIMER_ON,
-    LIGHT_CHANNEL_2_TIMER_OFF,
-    LIGHT_CHANNEL_3_TIMER_ON,
-    LIGHT_CHANNEL_3_TIMER_OFF,
     WASHING_MACHINE_MODELS,
     WASHING_MACHINE_2020_MODELS,
     WASHING_MACHINE_OPERATING_STATUS,
-    WASHING_MACHINE_POSTPONE_DRYING,
     WASHING_MACHINE_TIMER_REMAINING_TIME,
-    WASHING_MACHINE_PROGRESS,
     WEIGHT_PLATE_FOOD_NAME,
     WEIGHT_PLATE_MANAGEMENT_MODE,
     WEIGHT_PLATE_MANAGEMENT_VALUE,
@@ -273,55 +268,12 @@ class PanasonicSmartHome(object):
             idx = idx + 1
 
     def _workaround_info(self, model_type: str, command_type: str, status):
-        """
-        some workaround on info
-        """
-        try:
-            new = int(status)
-            if (command_type in [CLIMATE_PM25, DEHUMIDIFIER_PM25] and
-                    int(status) == 65535
-                ):
-                new = 0
-            elif (model_type in ["HDH", "KBS", "LMS", "LM", "DDH", "MDH", "DW", "LX128B"] and
-                    command_type == WASHING_MACHINE_TIMER_REMAINING_TIME
-                ):
-                if int(status) > 65000:
-                    new = 0
-            elif (model_type in ["XGS"] and
-                    command_type in [
-                        FRIDGE_FREEZER_TEMPERATURE,
-                        FRIDGE_THAW_TEMPERATURE
-                    ]
-                ):
-                new = int(status) - 255
-        except:
-            new = status
-        return command_type, new
+        """Apply known Panasonic cloud value normalizations."""
+        return normalize_command_status(model_type, command_type, status)
 
     def _refactor_info(self, model_type: str, devices_info: list):
-        """
-        refactor the status of information for easy use
-        """
-        if len(devices_info) < 1:
-            return []
-
-        new = []
-        for device in devices_info:
-            device_id = device.get("DeviceID", None)
-            if device_id is not None:
-                device_info = device["Info"]
-                device_status = {}
-                for info in device_info:
-                    command_type, status = self._workaround_info(
-                        model_type,
-                        info["CommandType"],
-                        info["status"]
-                    )
-                    device_status[command_type] = status
-                device["status"] = device_status
-                device.pop("Info", None)
-                new.append(device)
-        return new
+        """Refactor raw DeviceGetInfo payloads into status dictionaries."""
+        return refactor_device_information(model_type, devices_info)
 
     @api_status
     async def get_device_with_info(self, device: dict, func: list):
@@ -370,15 +322,7 @@ class PanasonicSmartHome(object):
 
     def _get_supplemental_keys(self, device: dict) -> list:
         """Return isolated supplemental command keys for this device/model."""
-        device_type = str(device.get("DeviceType", ""))
-        model_type = device.get("ModelType", "")
-        return list(
-            supplemental_commands_for_model(
-                CAPABILITY_REGISTRY,
-                device_type,
-                model_type,
-            )
-        )
+        return get_supplemental_keys(device, capability_registry=CAPABILITY_REGISTRY)
 
     @api_status
     async def _fetch_device_command_snapshot(self, device: dict, device_id, keys: list) -> dict:
@@ -404,70 +348,25 @@ class PanasonicSmartHome(object):
         return snapshot
 
     def _merge_supplemental_status(self, info_list: list, supplemental_by_device_id: dict) -> list:
-        if not info_list or not supplemental_by_device_id:
-            return info_list
-        for device_info in info_list:
-            device_id = device_info.get("DeviceID")
-            extras = supplemental_by_device_id.get(device_id)
-            if not extras:
-                continue
-            status = device_info.setdefault("status", {})
-            for key, value in extras.items():
-                status[key] = value
-        return info_list
+        return merge_supplemental_status(info_list, supplemental_by_device_id)
 
     def _get_commands(self, device_type, model_type, model):
         """
         get commands (saa: service code)
         """
-        cmds_list = [
-                {"CommandType": "0x00"}
-            ]
-        if not self._commands:
-            return cmds_list
-        commands_type = []
-        fallback_extra_commands = None
-        fallback_excluded_model_types = None
-        if int(device_type) == DEVICE_TYPE_FRIDGE:
-            fallback_extra_commands = FRIDGE_XGS_COMMANDS
-            fallback_excluded_model_types = MODEL_JP_TYPES
-
-        new_cmds = commands_for_model(
-            CAPABILITY_REGISTRY,
+        return build_polling_command_types(
             device_type,
             model_type,
-            fallback_extra_commands=fallback_extra_commands,
-            fallback_excluded_model_types=fallback_excluded_model_types,
+            has_remote_commands=bool(self._commands),
+            capability_registry=CAPABILITY_REGISTRY,
+            model_jp_types=MODEL_JP_TYPES,
         )
-        if not new_cmds:
-            return cmds_list
-
-        for cmd in new_cmds:
-            commands_type.append(
-                {"CommandType": cmd}
-            )
-
-        return commands_type
 
     def _get_device_commands(self, device_type, model_type, model, device_id):
         """
         get commands (saa: service code)
         """
-        new_cmds = []
-        if (int(device_type) == DEVICE_TYPE_LIGHT):
-            if ((model in ["F540107", "F241107", "F540207", "F540207"]) and (device_id == 1)):
-                new_cmds.extend([LIGHT_CHANNEL_1_TIMER_ON, LIGHT_CHANNEL_1_TIMER_OFF, LIGHT_OPERATION_STATE])
-            elif ((model in ["F540207", "F540207"]) and (device_id == 2)):
-                new_cmds.extend([LIGHT_CHANNEL_2_TIMER_ON, LIGHT_CHANNEL_2_TIMER_OFF])
-            elif ((model == "F540307") and (device_id == 3)):
-                new_cmds.extend([LIGHT_CHANNEL_3_TIMER_ON, LIGHT_CHANNEL_3_TIMER_OFF])
-        commands_type = []
-        for cmd in new_cmds:
-            commands_type.append(
-                {"CommandType": cmd}
-            )
-
-        return commands_type
+        return build_light_device_command_types(device_type, model, device_id)
 
     def _refactor_cmds_paras(self, commands_list: dict) -> list:
         """
@@ -482,29 +381,12 @@ class PanasonicSmartHome(object):
         )
 
     def _offline_info(self, device_type, model_type):
-        """
-        For washing machine, can not get info after offline
-
-        Returns:
-            list: the info of device
-        """
-        if str(device_type) == str(DEVICE_TYPE_WASHING_MACHINE):
-            # 洗衣機遇到 cloud/network busy 時不可用假資料 0 覆蓋狀態；
-            # 否則 0x74 遙控、0x50 運轉情報等會被 HA 誤顯示為關閉/離線。
-            return []
-
-        commands = commands_for_model(
-            CAPABILITY_REGISTRY,
+        """Return fallback offline Information rows."""
+        return build_offline_information(
             device_type,
             model_type,
-            apply_excess=False,
+            capability_registry=CAPABILITY_REGISTRY,
         )
-        status = {}
-        if commands:
-            for key in commands:
-                status[key] = 0
-
-        return [{'DeviceID': 1, 'status': status}]
 
     def is_supported(self, model_type: str):
         """is model type supported
@@ -517,61 +399,7 @@ class PanasonicSmartHome(object):
 
     def _user_info_statistics_requests(self, now=None):
         """Build UserGetInfo statistics query ranges."""
-        if now is None:
-            now = datetime.today()
-        today = now.date() if isinstance(now, datetime) else now
-
-        def first_day_months_ago(months_ago: int):
-            month_index = today.year * 12 + today.month - 1 - months_ago
-            year = month_index // 12
-            month = month_index % 12 + 1
-            return today.replace(year=year, month=month, day=1)
-
-        def day_labels(start, count: int):
-            return [(start + timedelta(days=idx)).strftime("%Y-%m-%d") for idx in range(count)]
-
-        def month_labels(start, count: int):
-            labels = []
-            for idx in range(count):
-                month_index = start.year * 12 + start.month - 1 + idx
-                year = month_index // 12
-                month = month_index % 12 + 1
-                labels.append(f"{year:04d}-{month:02d}")
-            return labels
-
-        month_start = today.replace(day=1)
-        year_start = today.replace(month=1, day=1)
-        last_30_start = today - timedelta(days=29)
-        last_12_month_start = first_day_months_ago(11)
-        current_month_days = (today - month_start).days + 1
-
-        return [
-            {
-                "range_key": "today",
-                "data": {"name": "", "from": today.strftime("%Y/%m/%d"), "unit": "day", "max_num": 1},
-                "labels": day_labels(today, 1),
-            },
-            {
-                "range_key": "current_month",
-                "data": {"name": "", "from": month_start.strftime("%Y/%m/%d"), "unit": "day", "max_num": current_month_days},
-                "labels": day_labels(month_start, current_month_days),
-            },
-            {
-                "range_key": "current_year",
-                "data": {"name": "", "from": year_start.strftime("%Y/%m/%d"), "unit": "month", "max_num": today.month},
-                "labels": month_labels(year_start, today.month),
-            },
-            {
-                "range_key": "last_30_days",
-                "data": {"name": "", "from": last_30_start.strftime("%Y/%m/%d"), "unit": "day", "max_num": 30},
-                "labels": day_labels(last_30_start, 30),
-            },
-            {
-                "range_key": "last_12_months",
-                "data": {"name": "", "from": last_12_month_start.strftime("%Y/%m/%d"), "unit": "month", "max_num": 12},
-                "labels": month_labels(last_12_month_start, 12),
-            },
-        ]
+        return build_user_info_statistics_requests(now)
 
 
     def _user_info_external_statistics(self, info_type, range_key, labels, response):

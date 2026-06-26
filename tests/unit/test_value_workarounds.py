@@ -11,7 +11,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
-from tests.helpers.source_parsing import load_constant_assignments, load_method_function
+from tests.helpers.source_parsing import (
+    add_capability_runtime_globals,
+    load_constant_assignments,
+    load_method_function,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 CONST_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "const.py"
@@ -19,7 +23,7 @@ CLOUD_PATH = ROOT / "custom_components" / "panasonic_ems2" / "core" / "cloud.py"
 
 
 def _load_workaround() -> tuple[dict[str, Any], Callable[..., tuple[str, Any]]]:
-    constants = load_constant_assignments(CONST_PATH)
+    constants = add_capability_runtime_globals(load_constant_assignments(CONST_PATH))
     method = load_method_function(
         CLOUD_PATH,
         class_name="PanasonicSmartHome",

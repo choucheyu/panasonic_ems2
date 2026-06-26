@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from tests.helpers.source_parsing import (
+    add_capability_runtime_globals,
     eval_literalish,
     load_constant_assignments,
     load_method_function,
@@ -88,7 +89,7 @@ def _load_tuple_call_attributes(tuple_name: str) -> dict[str, dict[str, Any]]:
 
 
 def _load_cloud_method(method_name: str):
-    constants = load_constant_assignments(CONST_PATH)
+    constants = add_capability_runtime_globals(load_constant_assignments(CONST_PATH))
     series_spec = importlib.util.spec_from_file_location("panasonic_user_info_series", USER_INFO_SERIES_PATH)
     assert series_spec is not None and series_spec.loader is not None
     series_module = importlib.util.module_from_spec(series_spec)
