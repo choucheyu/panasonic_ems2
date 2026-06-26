@@ -16,7 +16,12 @@ from .core.const import (
     DEVICE_TYPE_FRIDGE,
     DEVICE_TYPE_WASHING_MACHINE,
     DEVICE_TYPE_WEIGHT_PLATE,
+    WASHING_MACHINE_ACTIVE_FINISH_TIME_KEYS,
+    WASHING_MACHINE_ACTIVE_OPERATING_STATUS_VALUES,
     WASHING_MACHINE_CLOCK_TIME_KEYS,
+    WASHING_MACHINE_OPERATING_STATUS,
+    WASHING_MACHINE_RESERVATION_CLOCK_TIME_KEYS,
+    WASHING_MACHINE_RESERVATION_OPERATING_STATUS_VALUES,
     WASHING_MACHINE_SENSORS,
     WEIGHT_PLATE_SENSORS,
     PanasonicSensorDescription
@@ -127,7 +132,27 @@ class PanasonicSensor(PanasonicBaseEntity, SensorEntity):
                 return get_key_from_dict(rng, int(value))
             return value
         value = status.get(self.entity_description.key, None)
+
         if self.entity_description.key in WASHING_MACHINE_CLOCK_TIME_KEYS:
+            operating_status_value = status.get(WASHING_MACHINE_OPERATING_STATUS)
+            if operating_status_value is None:
+                return None
+            try:
+                operating_status = int(operating_status_value)
+            except (TypeError, ValueError):
+                return None
+
+            if (
+                self.entity_description.key in WASHING_MACHINE_ACTIVE_FINISH_TIME_KEYS
+                and operating_status not in WASHING_MACHINE_ACTIVE_OPERATING_STATUS_VALUES
+            ):
+                return None
+            if (
+                self.entity_description.key in WASHING_MACHINE_RESERVATION_CLOCK_TIME_KEYS
+                and operating_status not in WASHING_MACHINE_RESERVATION_OPERATING_STATUS_VALUES
+            ):
+                return None
+
             if value is None:
                 return None
             try:

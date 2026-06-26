@@ -653,7 +653,7 @@ WASHING_MACHINE_HDH_NON_COMMANDLIST_COMMANDS = [
 
 WASHING_MACHINE_HDH_SUPPLEMENTAL_COMMANDS = [
     # 以下 key 不在 HDH 遠端 CommandList，但已由實機小包 DeviceGetInfo / observation 確認可讀；改走 supplemental 小包。
-    WASHING_MACHINE_TIMER_REMAINING_TIME,  # 0x58：預估洗衣完成時間（分鐘），曾隨官方 App 預約倒數變化。
+    WASHING_MACHINE_TIMER_REMAINING_TIME,  # 0x58：預約洗衣完成時間（分鐘），僅在 0x50=預約中 時有語意。
     WASHING_MACHINE_ENERGY,                # 0x1E：用電量；不在 HDH CommandList，改用 supplemental 小包。
     WASHING_MACHINE_REMOTE_CONTROL,        # 0x74：遠端遙控，1 為開啟、0 為關閉。
     WASHING_MACHINE_DETERGENT_AMOUNT,      # 0x76：洗劑投入設定 mL。
@@ -686,9 +686,9 @@ WASHING_MACHINE_HDH_SUPPLEMENTAL_DISPLAY_KEYS = [
 
 COMMAND_NAME_OVERRIDES = {
     str(DEVICE_TYPE_WASHING_MACHINE): {
-        WASHING_MACHINE_REMAING_WASH_TIME: "洗衣行程時間",
-        WASHING_MACHINE_TIMER_REMAINING_TIME_OLD: "預估洗衣開始時間",
-        WASHING_MACHINE_TIMER_REMAINING_TIME: "預估洗衣完成時間",
+        WASHING_MACHINE_REMAING_WASH_TIME: "預估洗衣完成時間",
+        WASHING_MACHINE_TIMER_REMAINING_TIME_OLD: "預約洗衣開始時間",
+        WASHING_MACHINE_TIMER_REMAINING_TIME: "預約洗衣完成時間",
         WASHING_MACHINE_CURRENT_MODE: "目前洗衣行程",
         WASHING_MACHINE_CURRENT_PROGRESS: "洗衣行程設定",
         WASHING_MACHINE_REMOTE_CONTROL: "遠端遙控",
@@ -709,6 +709,18 @@ WASHING_MACHINE_CLOCK_TIME_KEYS = [
     WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
     WASHING_MACHINE_TIMER_REMAINING_TIME,
 ]
+
+WASHING_MACHINE_ACTIVE_FINISH_TIME_KEYS = [
+    WASHING_MACHINE_REMAING_WASH_TIME,
+]
+
+WASHING_MACHINE_RESERVATION_CLOCK_TIME_KEYS = [
+    WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
+    WASHING_MACHINE_TIMER_REMAINING_TIME,
+]
+
+WASHING_MACHINE_ACTIVE_OPERATING_STATUS_VALUES = [2]
+WASHING_MACHINE_RESERVATION_OPERATING_STATUS_VALUES = [3, 4]
 
 WASHING_MACHINE_KBS_COMMANDS = [
     WASHING_MACHINE_TIMER_REMAINING_TIME_OLD
@@ -1007,7 +1019,10 @@ SET_COMMAND_TYPE = {
     },
     str(DEVICE_TYPE_WASHING_MACHINE): {
         WASHING_MACHINE_ENABLE: 1,
+        WASHING_MACHINE_TIMER: 20,
         WASHING_MACHINE_PROGRESS: 130,
+        WASHING_MACHINE_60: 96,
+        WASHING_MACHINE_POSTPONE_DRYING_TIME: 97,
         WASHING_MACHINE_PROGRESS_NEW: 100,
         WASHING_MACHINE_WARM_WATER: 105
     },
@@ -1553,6 +1568,47 @@ FRIDGE_SELECTS: tuple[PanasonicSelectDescription, ...] = (
     )
 )
 
+WASHING_MACHINE_HDH_SELECTS: tuple[PanasonicSelectDescription, ...] = (
+    PanasonicSelectDescription(
+        key=WASHING_MACHINE_TIMER,
+        name="預約時間設定",
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:clock-start",
+        options=[],
+        options_value=[]
+    ),
+    PanasonicSelectDescription(
+        key=WASHING_MACHINE_60,
+        name="時間調整",
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:clock-edit-outline",
+        options=[],
+        options_value=[]
+    ),
+    PanasonicSelectDescription(
+        key=WASHING_MACHINE_POSTPONE_DRYING_TIME,
+        name="延後晾衣設定",
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:hanger",
+        options=[],
+        options_value=[]
+    ),
+    PanasonicSelectDescription(
+        key=WASHING_MACHINE_PROGRESS_NEW,
+        name="行程設定",
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:washing-machine",
+        options=[],
+        options_value=[]
+    )
+)
+
+WASHING_MACHINE_SELECTS_BY_MODEL = {
+    # Only HDH was confirmed against the remote CommandList. Do not apply these
+    # writable selects to DDH/DW/MDH until their CommandList/ranges are checked.
+    "HDH": WASHING_MACHINE_HDH_SELECTS,
+}
+
 WASHING_MACHINE_SELECTS: tuple[PanasonicSelectDescription, ...] = ()
 
 
@@ -1600,7 +1656,7 @@ AIRPURIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=AIRPURIFIER_ENERGY,
-        name="用電量",
+        name="累積用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -1640,7 +1696,7 @@ CLIMATE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=CLIMATE_ENERGY,
-        name="用電量",
+        name="累積用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -1683,7 +1739,7 @@ DEHUMIDIFIER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=DEHUMIDIFIER_ENERGY,
-        name="用電量",
+        name="累積用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -1733,7 +1789,7 @@ ERV_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=ERV_ENERGY,
-        name="用電量",
+        name="累積用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -1765,7 +1821,7 @@ FRIDGE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=FRIDGE_ENERGY,
-        name="用電量",
+        name="累積用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
@@ -1822,7 +1878,7 @@ LIGHT_SENSORS: tuple[PanasonicSensorDescription, ...] = (
 WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
         key=WASHING_MACHINE_REMAING_WASH_TIME,
-        name="洗衣行程時間",
+        name="預估洗衣完成時間",
         icon="mdi:clock"
     ),
     PanasonicSensorDescription(
@@ -1834,12 +1890,12 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
-        name="預估洗衣開始時間",
+        name="預約洗衣開始時間",
         icon="mdi:clock-alert-outline"
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_TIMER_REMAINING_TIME,
-        name="預估洗衣完成時間",
+        name="預約洗衣完成時間",
         icon="mdi:clock-outline"
     ),
     PanasonicSensorDescription(
@@ -1904,7 +1960,7 @@ WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
     PanasonicSensorDescription(
         key=WASHING_MACHINE_ENERGY,
-        name="用電量",
+        name="累積用電量",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,

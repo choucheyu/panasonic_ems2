@@ -6,8 +6,8 @@ The user's NA-V160HDH observations showed:
   course-setting command exposed by the cloud command list.
 * 0x56 is not a confirmed 自動延後晾衣 toggle: it stayed 0 after the
   official app toggle was turned off while a pending program remained.
-* 0x61 stayed 65535 while the official app delay-airing hour changed, so it
-  must not be exposed as a writable 延後晾衣時間設定 control.
+* 0x61 is the CommandList-backed 延後晾衣設定 key; 0x56 remains the legacy/raw
+  observation key and must not be exposed as the setting select.
 * 0x58 tracks the active completion/finish estimate in minutes.
 * 0x76 and 0x77 track detergent and softener ml settings respectively.
 """
@@ -91,40 +91,43 @@ def _description_metadata(tuple_name: str) -> dict[str, dict[str, Any]]:
     return descriptions
 
 
-def test_hdh_washer_does_not_expose_legacy_or_composite_course_selects() -> None:
-    """HDH course values 0x02/0x64 are observed/composite, not safe writable selects."""
+def test_hdh_washer_exposes_commandlist_course_select_not_legacy_course_select() -> None:
+    """HDH uses CommandList 0x64 as course select; legacy 0x02 remains out."""
     const = _constants()
-    select_keys = _description_keys("WASHING_MACHINE_SELECTS")
+    select_keys = _description_keys("WASHING_MACHINE_HDH_SELECTS")
 
     assert const["WASHING_MACHINE_PROGRESS"] not in select_keys
-    assert const["WASHING_MACHINE_PROGRESS_NEW"] not in select_keys
+    assert const["WASHING_MACHINE_PROGRESS_NEW"] in select_keys
 
 
-def test_observed_reservation_hour_is_read_only_sensor_not_writable_select() -> None:
-    """0x14 read 15 for a pending completion reservation, outside the old 0..8 select."""
+def test_hdh_commandlist_setting_keys_are_exposed_as_select_candidates() -> None:
+    """Expose HDH CommandList-backed settings as selects; keep legacy 0x02 out."""
     const = _constants()
-    select_keys = _description_keys("WASHING_MACHINE_SELECTS")
-    sensor_descriptions = _description_metadata("WASHING_MACHINE_SENSORS")
+    select_keys = _description_keys("WASHING_MACHINE_HDH_SELECTS")
     set_commands = cast(
         dict[str, dict[str, int]],
         const["SET_COMMAND_TYPE"],
     )[str(const["DEVICE_TYPE_WASHING_MACHINE"])]
 
-    assert const["WASHING_MACHINE_TIMER"] not in select_keys
-    assert const["WASHING_MACHINE_TIMER"] not in set_commands
-    reservation_hour = sensor_descriptions[cast(str, const["WASHING_MACHINE_TIMER"])]
-    assert reservation_hour["name"] == "預約時間設定"
-    assert reservation_hour["native_unit_of_measurement"] == "UnitOfTime.HOURS"
+    assert select_keys == [
+        const["WASHING_MACHINE_TIMER"],
+        const["WASHING_MACHINE_60"],
+        const["WASHING_MACHINE_POSTPONE_DRYING_TIME"],
+        const["WASHING_MACHINE_PROGRESS_NEW"],
+    ]
+    assert const["WASHING_MACHINE_PROGRESS"] not in select_keys
+    for key in select_keys:
+        assert key in set_commands
 
 
-def test_unconfirmed_delay_airing_controls_are_not_exposed_as_writable_selects() -> None:
-    """0x56 and 0x61 must not be presented as confirmed writable delay-airing controls."""
+def test_legacy_delay_airing_raw_key_is_not_exposed_as_writable_select() -> None:
+    """0x56 stays raw/read-only; 0x61 is the CommandList-backed setting select."""
     const = _constants()
-    select_keys = _description_keys("WASHING_MACHINE_SELECTS")
+    select_keys = _description_keys("WASHING_MACHINE_HDH_SELECTS")
     sensor_descriptions = _description_metadata("WASHING_MACHINE_SENSORS")
 
     assert const["WASHING_MACHINE_POSTPONE_DRYING"] not in select_keys
-    assert const["WASHING_MACHINE_POSTPONE_DRYING_TIME"] not in select_keys
+    assert const["WASHING_MACHINE_POSTPONE_DRYING_TIME"] in select_keys
     assert const["WASHING_MACHINE_POSTPONE_DRYING"] in sensor_descriptions
     assert (
         sensor_descriptions[cast(str, const["WASHING_MACHINE_POSTPONE_DRYING"])]["name"]
@@ -212,8 +215,8 @@ def test_uncertain_hdh_keys_stay_commented_with_traditional_chinese_rationale() 
     assert "# WASHING_MACHINE_57" in source
 
 
-def test_unconfirmed_delay_airing_time_has_no_set_command() -> None:
-    """0x61 returned sentinel values and must not be writable until a real endpoint is found."""
+def test_legacy_delay_airing_raw_key_has_no_set_command_but_0x61_does() -> None:
+    """0x56 stays raw-only; 0x61 is the CommandList-backed writable setting."""
     const = _constants()
     set_commands = cast(
         dict[str, dict[str, int]],
@@ -221,7 +224,7 @@ def test_unconfirmed_delay_airing_time_has_no_set_command() -> None:
     )[str(const["DEVICE_TYPE_WASHING_MACHINE"])]
 
     assert cast(str, const["WASHING_MACHINE_POSTPONE_DRYING"]) not in set_commands
-    assert cast(str, const["WASHING_MACHINE_POSTPONE_DRYING_TIME"]) not in set_commands
+    assert cast(str, const["WASHING_MACHINE_POSTPONE_DRYING_TIME"]) in set_commands
 
 
 def test_confirmed_detergent_and_softener_amount_sensors_use_ml() -> None:
@@ -261,14 +264,14 @@ def test_hdh_main_command_labels_match_remote_commandlist_chinese() -> None:
 
     expected = {
         const["WASHING_MACHINE_ENABLE"]: "開始洗衣",
-        const["WASHING_MACHINE_REMAING_WASH_TIME"]: "洗衣行程時間",
+        const["WASHING_MACHINE_REMAING_WASH_TIME"]: "預估洗衣完成時間",
         const["WASHING_MACHINE_TIMER"]: "預約時間設定",
         const["WASHING_MACHINE_ERROR_CODE"]: "異常代碼",
         const["WASHING_MACHINE_OPERATING_STATUS"]: "運轉情報",
         const["WASHING_MACHINE_CURRENT_MODE"]: "目前洗衣行程",
         const["WASHING_MACHINE_CURRENT_PROGRESS"]: "洗衣行程設定",
         const["WASHING_MACHINE_WARM_WATER"]: "溫水設定",
-        const["WASHING_MACHINE_TIMER_REMAINING_TIME_OLD"]: "預估洗衣開始時間",
+        const["WASHING_MACHINE_TIMER_REMAINING_TIME_OLD"]: "預約洗衣開始時間",
         const["WASHING_MACHINE_60"]: "時間調整",
         const["WASHING_MACHINE_POSTPONE_DRYING_TIME"]: "延後晾衣設定",
         const["WASHING_MACHINE_PROGRESS_NEW"]: "行程設定",
@@ -310,11 +313,11 @@ def test_command_name_overrides_win_over_remote_commandlist_names() -> None:
 
     client = Client()
 
-    assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_REMAING_WASH_TIME"]) == "洗衣行程時間"
+    assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_REMAING_WASH_TIME"]) == "預估洗衣完成時間"
     assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_CURRENT_MODE"]) == "目前洗衣行程"
     assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_CURRENT_PROGRESS"]) == "洗衣行程設定"
-    assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_TIMER_REMAINING_TIME_OLD"]) == "預估洗衣開始時間"
-    assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_TIMER_REMAINING_TIME"]) == "預估洗衣完成時間"
+    assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_TIMER_REMAINING_TIME_OLD"]) == "預約洗衣開始時間"
+    assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_TIMER_REMAINING_TIME"]) == "預約洗衣完成時間"
     assert get_command_name(client, "GWID_TEST", const["WASHING_MACHINE_REMOTE_CONTROL"]) == "遠端遙控"
 
 
@@ -358,13 +361,13 @@ def test_remote_control_value_uses_local_open_closed_mapping() -> None:
 
 
 def test_reservation_countdown_sensor_uses_observed_0x58_name() -> None:
-    """0x58 tracks the washer finish estimate in minutes."""
+    """0x58 is the reservation finish estimate, not the active running finish estimate."""
     const = _constants()
     sensor_descriptions = _description_metadata("WASHING_MACHINE_SENSORS")
 
     countdown = sensor_descriptions[cast(str, const["WASHING_MACHINE_TIMER_REMAINING_TIME"])]
 
-    assert countdown["name"] == "預估洗衣完成時間"
+    assert countdown["name"] == "預約洗衣完成時間"
 
 
 def test_monthly_user_info_labels_use_current_month_wording() -> None:
@@ -379,8 +382,8 @@ def test_monthly_user_info_labels_use_current_month_wording() -> None:
     assert wash_times["name"] == "當月洗衣次數"
 
 
-def test_time_countdown_keys_render_as_clock_time_without_minute_units() -> None:
-    """0x13/0x15/0x58 normal minute values should display as actual HH:MM times."""
+def test_washer_clock_time_keys_follow_operating_status_semantics() -> None:
+    """0x13 is active-running only; 0x15/0x58 are reservation-only clock estimates."""
     const = _constants()
     sensor_descriptions = _description_metadata("WASHING_MACHINE_SENSORS")
     time_keys = [
@@ -421,17 +424,34 @@ def test_time_countdown_keys_render_as_clock_time_without_minute_units() -> None
         coordinator = SimpleNamespace(data={})
         info = {"DeviceType": const["DEVICE_TYPE_WASHING_MACHINE"]}
 
-        def __init__(self, key: str, value: int) -> None:
+        def __init__(self, key: str, value: int, operating_status: int) -> None:
             self.key = key
             self.value = value
+            self.operating_status = operating_status
             self.entity_description = SimpleNamespace(key=key, device_class=None)
 
         def get_status(self, _data: object) -> dict[str, int]:
-            return {self.key: self.value}
+            operating_status_key = cast(str, const["WASHING_MACHINE_OPERATING_STATUS"])
+            return {
+                self.key: self.value,
+                operating_status_key: self.operating_status,
+            }
 
-    for key in time_keys:
-        assert native_value(Sensor(cast(str, key), 35)) == "11:33"
-        assert native_value(Sensor(cast(str, key), 64933)) is None
+    active_finish_key = cast(str, const["WASHING_MACHINE_REMAING_WASH_TIME"])
+    reservation_start_key = cast(str, const["WASHING_MACHINE_TIMER_REMAINING_TIME_OLD"])
+    reservation_finish_key = cast(str, const["WASHING_MACHINE_TIMER_REMAINING_TIME"])
+
+    assert native_value(Sensor(active_finish_key, 35, 2)) == "11:33"
+    assert native_value(Sensor(active_finish_key, 35, 3)) is None
+    assert native_value(Sensor(active_finish_key, 35, 4)) is None
+    assert native_value(Sensor(active_finish_key, 35, 1)) is None
+
+    for key in [reservation_start_key, reservation_finish_key]:
+        assert native_value(Sensor(key, 35, 3)) == "11:33"
+        assert native_value(Sensor(key, 35, 4)) == "11:33"
+        assert native_value(Sensor(key, 35, 2)) is None
+        assert native_value(Sensor(key, 35, 1)) is None
+        assert native_value(Sensor(key, 64933, 3)) is None
 
 
 def test_finish_estimate_suppresses_panasonic_sentinel_values() -> None:
@@ -467,14 +487,23 @@ def test_finish_estimate_suppresses_panasonic_sentinel_values() -> None:
         )
         coordinator = SimpleNamespace(data={})
         info = {"DeviceType": const["DEVICE_TYPE_WASHING_MACHINE"]}
+        operating_status = 3
 
         def __init__(self, value: int) -> None:
             self.value = value
 
         def get_status(self, _data: object) -> dict[str, int]:
             key = cast(str, const["WASHING_MACHINE_TIMER_REMAINING_TIME"])
-            return {key: self.value}
+            operating_status_key = cast(str, const["WASHING_MACHINE_OPERATING_STATUS"])
+            return {
+                key: self.value,
+                operating_status_key: self.operating_status,
+            }
 
+    Sensor.operating_status = 3
     assert native_value(Sensor(64933)) is None
     assert native_value(Sensor(65535)) is None
     assert native_value(Sensor(123)) == "13:01"
+
+    Sensor.operating_status = 2
+    assert native_value(Sensor(123)) is None

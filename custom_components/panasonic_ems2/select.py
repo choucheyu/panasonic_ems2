@@ -13,7 +13,7 @@ from .core.const import (
     DATA_COORDINATOR,
     SAA_SELECTS,
     DEVICE_TYPE_WASHING_MACHINE,
-    WASHING_MACHINE_SELECTS,
+    WASHING_MACHINE_SELECTS_BY_MODEL,
     PanasonicSelectDescription
 )
 SCAN_INTERVAL = timedelta(seconds=60)
@@ -47,7 +47,7 @@ async def async_setup_entry(hass, entry, async_add_entities) -> bool:
                                 )
 
             if device_type == DEVICE_TYPE_WASHING_MACHINE:
-                for description in WASHING_MACHINE_SELECTS:
+                for description in WASHING_MACHINE_SELECTS_BY_MODEL.get(info.get("ModelType", ""), ()):
                         entities.extend(
                             [PanasonicSelect(
                                 coordinator, device_gwid, 1, client, info, description)]
