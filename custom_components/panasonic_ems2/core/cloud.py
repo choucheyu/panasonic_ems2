@@ -4,13 +4,16 @@ import asyncio
 from http import HTTPStatus
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from typing import Literal
 
+from homeassistant.components.recorder.models import StatisticData, StatisticMetaData, StatisticMeanType
+from homeassistant.components.recorder.statistics import async_add_external_statistics
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.helpers.storage import Store
-from homeassistant.const import CONTENT_TYPE_JSON, EVENT_HOMEASSISTANT_STOP
+from homeassistant.const import CONTENT_TYPE_JSON, EVENT_HOMEASSISTANT_STOP, UnitOfEnergy, UnitOfVolume
+from homeassistant.util.unit_conversion import EnergyConverter, VolumeConverter
 
 from .exceptions import (
     Ems2TokenNotFound,
@@ -48,6 +51,7 @@ from .const import (
     ENTITY_WATER_USED,
     ENTITY_UPDATE,
     ENTITY_UPDATE_INFO,
+    USER_INFO_SERIES_REFRESH_SECONDS,
     DEHUMIDIFIER_PM25,
     FRIDGE_FREEZER_TEMPERATURE,
     FRIDGE_THAW_TEMPERATURE,
@@ -135,6 +139,7 @@ class PanasonicSmartHome(object):
         self._refresh_token_timeout = None
         self._mversion = None
         self._update_timestamp = None
+        self._user_info_series_last_update = None
         self._api_counts = 0
         self._api_counts_per_hour = 0
 
@@ -608,6 +613,246 @@ class PanasonicSmartHome(object):
 
         return True
 
+    def _user_info_statistics_requests(self, now=None):
+        """Build UserGetInfo statistics query ranges."""
+        if now is None:
+            now = datetime.today()
+        today = now.date() if isinstance(now, datetime) else now
+
+        def first_day_months_ago(months_ago: int):
+            month_index = today.year * 12 + today.month - 1 - months_ago
+            year = month_index // 12
+            month = month_index % 12 + 1
+            return today.replace(year=year, month=month, day=1)
+
+        def day_labels(start, count: int):
+            return [(start + timedelta(days=idx)).strftime("%Y-%m-%d") for idx in range(count)]
+
+        def month_labels(start, count: int):
+            labels = []
+            for idx in range(count):
+                month_index = start.year * 12 + start.month - 1 + idx
+                year = month_index // 12
+                month = month_index % 12 + 1
+                labels.append(f"{year:04d}-{month:02d}")
+            return labels
+
+        month_start = today.replace(day=1)
+        year_start = today.replace(month=1, day=1)
+        last_30_start = today - timedelta(days=29)
+        last_12_month_start = first_day_months_ago(11)
+        current_month_days = (today - month_start).days + 1
+
+        return [
+            {
+                "range_key": "today",
+                "data": {"name": "", "from": today.strftime("%Y/%m/%d"), "unit": "day", "max_num": 1},
+                "labels": day_labels(today, 1),
+            },
+            {
+                "range_key": "current_month",
+                "data": {"name": "", "from": month_start.strftime("%Y/%m/%d"), "unit": "day", "max_num": current_month_days},
+                "labels": day_labels(month_start, current_month_days),
+            },
+            {
+                "range_key": "current_year",
+                "data": {"name": "", "from": year_start.strftime("%Y/%m/%d"), "unit": "month", "max_num": today.month},
+                "labels": month_labels(year_start, today.month),
+            },
+            {
+                "range_key": "last_30_days",
+                "data": {"name": "", "from": last_30_start.strftime("%Y/%m/%d"), "unit": "day", "max_num": 30},
+                "labels": day_labels(last_30_start, 30),
+            },
+            {
+                "range_key": "last_12_months",
+                "data": {"name": "", "from": last_12_month_start.strftime("%Y/%m/%d"), "unit": "month", "max_num": 12},
+                "labels": month_labels(last_12_month_start, 12),
+            },
+        ]
+
+    def _safe_statistic_object_id(self, value: str) -> str:
+        """Return a valid external statistics object id fragment."""
+        return "".join(ch.lower() if ch.isalnum() else "_" for ch in str(value)).strip("_")
+
+    def _statistics_start_from_label(self, label: str):
+        """Return timezone-aware local period start from a day/month UserGetInfo label."""
+        if len(label) == 7:
+            naive = datetime.strptime(label, "%Y-%m")
+        else:
+            naive = datetime.strptime(label, "%Y-%m-%d")
+        if hasattr(local_tz, "localize"):
+            return local_tz.localize(naive)
+        return naive.replace(tzinfo=local_tz)
+
+    def _user_info_statistic_metadata(self, gwid, metric_suffix, metric_name, unit, unit_class):
+        """Build recorder external statistics metadata."""
+        safe_gwid = self._safe_statistic_object_id(gwid)
+        statistic_id = f"{DOMAIN}:{safe_gwid}_{metric_suffix}"
+        device_name = self._devices_info.get(gwid, {}).get("NickName", safe_gwid)
+        return StatisticMetaData(
+            mean_type=StatisticMeanType.NONE,
+            has_sum=True,
+            name=f"{device_name} {metric_name}",
+            source=DOMAIN,
+            statistic_id=statistic_id,
+            unit_class=unit_class,
+            unit_of_measurement=unit,
+        )
+
+    def _user_info_external_statistics(self, info_type, range_key, labels, response):
+        """Convert UserGetInfo bucket values to recorder external statistics rows."""
+        def safe_statistic_object_id(value: str) -> str:
+            return "".join(ch.lower() if ch.isalnum() else "_" for ch in str(value)).strip("_")
+
+        def statistics_start_from_label(label: str):
+            if len(label) == 7:
+                naive = datetime.strptime(label, "%Y-%m")
+            else:
+                naive = datetime.strptime(label, "%Y-%m-%d")
+            if hasattr(local_tz, "localize"):
+                return local_tz.localize(naive)
+            return naive.replace(tzinfo=local_tz)
+
+        def statistic_metadata(gwid, metric_suffix, metric_name, unit, unit_class):
+            safe_gwid = safe_statistic_object_id(gwid)
+            device_name = self._devices_info.get(gwid, {}).get("NickName", safe_gwid)
+            return StatisticMetaData(
+                mean_type=StatisticMeanType.NONE,
+                has_sum=True,
+                name=f"{device_name} {metric_name}",
+                source=DOMAIN,
+                statistic_id=f"{DOMAIN}:{safe_gwid}_{metric_suffix}",
+                unit_class=unit_class,
+                unit_of_measurement=unit,
+            )
+
+        def as_number(value):
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return None
+
+        def as_number_list(values):
+            if not isinstance(values, list):
+                return []
+            parsed = []
+            for value in values:
+                number = as_number(value)
+                if number is not None:
+                    parsed.append(number)
+            return parsed
+
+        def build_statistics(values):
+            statistics = []
+            running_sum = 0.0
+            for label, value in zip(labels, values):
+                running_sum += value
+                statistics.append(
+                    StatisticData(
+                        start=statistics_start_from_label(label),
+                        state=value,
+                        sum=running_sum,
+                    )
+                )
+            return statistics
+
+        rows = []
+        for gwinfo in response.get("GwList", []):
+            gwid = gwinfo.get("GwID") or gwinfo.get("GWID")
+            if not gwid or gwid not in self._devices_info:
+                continue
+            device_type = self._devices_info[gwid].get("DeviceType")
+            metrics = []
+            if info_type == "Power":
+                metrics.append(
+                    {
+                        "suffix": "energy",
+                        "name": "用電量",
+                        "unit": UnitOfEnergy.KILO_WATT_HOUR,
+                        "unit_class": EnergyConverter.UNIT_CLASS,
+                        "values": as_number_list(gwinfo.get("kwh", [])),
+                    }
+                )
+            elif info_type == "Other" and device_type == str(DEVICE_TYPE_WASHING_MACHINE):
+                metrics.extend(
+                    [
+                        {
+                            "suffix": "water",
+                            "name": "用水量",
+                            "unit": UnitOfVolume.LITERS,
+                            "unit_class": VolumeConverter.UNIT_CLASS,
+                            "values": as_number_list(gwinfo.get("WM_WaterUsed", [])),
+                        },
+                        {
+                            "suffix": "wash_count",
+                            "name": "洗衣次數",
+                            "unit": "次",
+                            "unit_class": None,
+                            "values": as_number_list(gwinfo.get("WM_WashTime", [])),
+                        },
+                    ]
+                )
+
+            grain = "month" if labels and len(labels[0]) == 7 else "day"
+            for metric in metrics:
+                values = metric["values"]
+                if not values:
+                    continue
+                metadata = statistic_metadata(
+                    gwid,
+                    f"{metric['suffix']}_{grain}",
+                    metric["name"],
+                    metric["unit"],
+                    metric["unit_class"],
+                )
+                rows.append(
+                    {
+                        "metadata": metadata,
+                        "statistics": build_statistics(values),
+                        "range_key": range_key,
+                    }
+                )
+        return rows
+
+    async def _update_user_info_statistics(self, header):
+        """Fetch low-frequency UserGetInfo series and import them as recorder statistics."""
+        now = datetime.today()
+        if (
+            self._user_info_series_last_update is not None
+            and (now - self._user_info_series_last_update).total_seconds() < USER_INFO_SERIES_REFRESH_SECONDS
+        ):
+            return True
+
+        has_washer = any(
+            device.get("DeviceType") == str(DEVICE_TYPE_WASHING_MACHINE)
+            for device in self._devices_info.values()
+        )
+        info_types = ["Power"] + (["Other"] if has_washer else [])
+
+        for request in self._user_info_statistics_requests(now):
+            for info_type in info_types:
+                data = dict(request["data"])
+                data["name"] = info_type
+                response = await self.request(
+                    method="POST", headers=header, data=data, endpoint=apis.get_user_info()
+                )
+                if "GwList" not in response:
+                    continue
+                for row in self._user_info_external_statistics(
+                    info_type,
+                    request["range_key"],
+                    request["labels"],
+                    response,
+                ):
+                    async_add_external_statistics(
+                        self.hass,
+                        row["metadata"],
+                        row["statistics"],
+                    )
+        self._user_info_series_last_update = now
+        return True
+
     @api_status
     async def get_user_info(self):
         """ get user info
@@ -631,6 +876,8 @@ class PanasonicSmartHome(object):
             if "GwList" not in response:
                 return False
             for gwinfo in response["GwList"]:
+                if not isinstance(gwinfo, dict):
+                    continue
                 gwid = gwinfo["GwID"]
                 if "Information" not in self._devices_info.get(gwid, {}):
                     continue
@@ -643,12 +890,13 @@ class PanasonicSmartHome(object):
                         self._devices_info[gwid]["Information"][0]["status"][ENTITY_WATER_USED] = gwinfo["WM_WaterUsed_Total"]
                 if info == "Power":
                     if device_type == str(DEVICE_TYPE_DEHUMIDIFIER):
-                        self._devices_info[gwid]["Information"][0]["status"][ENTITY_MONTHLY_ENERGY] = gwinfo["Total_kwh"] * 0.1
+                        self._devices_info[gwid]["Information"][0]["status"][ENTITY_MONTHLY_ENERGY] = float(gwinfo.get("Total_kwh", 0))
                     if device_type == str(DEVICE_TYPE_FRIDGE):
-                        self._devices_info[gwid]["Information"][0]["status"][ENTITY_MONTHLY_ENERGY] = gwinfo["Total_kwh"] * 0.1
+                        self._devices_info[gwid]["Information"][0]["status"][ENTITY_MONTHLY_ENERGY] = float(gwinfo.get("Total_kwh", 0))
                     if device_type == str(DEVICE_TYPE_WASHING_MACHINE):
-                        self._devices_info[gwid]["Information"][0]["status"][ENTITY_MONTHLY_ENERGY] = gwinfo["Total_kwh"] * 0.1
+                        self._devices_info[gwid]["Information"][0]["status"][ENTITY_MONTHLY_ENERGY] = float(gwinfo.get("Total_kwh", 0))
 
+        await self._update_user_info_statistics(header)
         return True
 
     @api_status

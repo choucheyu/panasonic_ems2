@@ -1,0 +1,115 @@
+# Optional Lovelace view template for Panasonic EMS2 UserGetInfo statistics.
+#
+# Usage:
+# 1. Ensure Home Assistant loads recorder + history integrations.
+# 2. Replace every <...> placeholder with your actual Panasonic GWID suffix/statistic id.
+# 3. Paste this view YAML into a manual Lovelace dashboard, or import/adapt it.
+#
+# Notes:
+# - Do not put `title` on statistics-graph cards: HA links titles to state History,
+#   but these are external statistic IDs, not entity_ids.
+# - Keep different units in separate cards. Washer water is L; wash count is 次.
+# - Sections are ordered in pairs: 30-day/day on the left, 12-month/month on the right.
+
+title: Panasonic 統計圖表
+path: panasonic-statistics
+type: sections
+max_columns: 2
+sections:
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        heading: 用電量 - 近 30 日（日統計）
+      - type: statistics-graph
+        chart_type: bar
+        period: day
+        days_to_show: 30
+        stat_types:
+          - state
+        entities:
+          - entity: "panasonic_ems2:<device_1_gwid>_energy_day"
+            name: 裝置 1
+          - entity: "panasonic_ems2:<device_2_gwid>_energy_day"
+            name: 裝置 2
+          - entity: "panasonic_ems2:<washer_gwid>_energy_day"
+            name: 洗衣機
+
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        heading: 用電量 - 近 12 個月（月統計）
+      - type: statistics-graph
+        chart_type: bar
+        period: month
+        days_to_show: 365
+        stat_types:
+          - state
+        entities:
+          - entity: "panasonic_ems2:<device_1_gwid>_energy_month"
+            name: 裝置 1
+          - entity: "panasonic_ems2:<device_2_gwid>_energy_month"
+            name: 裝置 2
+          - entity: "panasonic_ems2:<washer_gwid>_energy_month"
+            name: 洗衣機
+
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        heading: 洗衣機用水量 - 近 30 日（日統計）
+      - type: statistics-graph
+        chart_type: bar
+        period: day
+        days_to_show: 30
+        stat_types:
+          - state
+        entities:
+          - entity: "panasonic_ems2:<washer_gwid>_water_day"
+            name: 用水量
+
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        heading: 洗衣機用水量 - 近 12 個月（月統計）
+      - type: statistics-graph
+        chart_type: bar
+        period: month
+        days_to_show: 365
+        stat_types:
+          - state
+        entities:
+          - entity: "panasonic_ems2:<washer_gwid>_water_month"
+            name: 用水量
+
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        heading: 洗衣機洗衣次數 - 近 30 日（日統計）
+      - type: statistics-graph
+        chart_type: bar
+        period: day
+        days_to_show: 30
+        stat_types:
+          - state
+        entities:
+          - entity: "panasonic_ems2:<washer_gwid>_wash_count_day"
+            name: 洗衣次數
+
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        heading: 洗衣機洗衣次數 - 近 12 個月（月統計）
+      - type: statistics-graph
+        chart_type: bar
+        period: month
+        days_to_show: 365
+        stat_types:
+          - state
+        entities:
+          - entity: "panasonic_ems2:<washer_gwid>_wash_count_month"
+            name: 洗衣次數
