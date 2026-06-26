@@ -1,38 +1,23 @@
-""" Panasonic Smart Home Exceptions."""
+"""Compatibility wrapper for Panasonic EMS2 API exceptions."""
 
-class Ems2BaseException(Exception):
-    """ Base exception """
+from ..api.errors import (
+    Ems2BaseException,
+    Ems2ExceedRateLimit,
+    Ems2Expectation,
+    Ems2InvalidRefreshToken,
+    Ems2LoginFailed,
+    Ems2TokenExpired,
+    Ems2TokenNotFound,
+    Ems2TooManyRequest,
+)
 
-
-class Ems2TokenNotFound(Ems2BaseException):
-    """ Refresh token not found """
-
-    def __init__(
-        self, message="Refresh token not existed. You may need to open session again."
-    ):
-        super().__init__(message)
-        self.message = message
-
-
-class Ems2TokenExpired(Ems2BaseException):
-    """ Token expired """
-
-
-class Ems2InvalidRefreshToken(Ems2BaseException):
-    """ Refresh token expired """
-
-
-class Ems2TooManyRequest(Ems2BaseException):
-    """ Too many request """
-
-
-class Ems2LoginFailed(Ems2BaseException):
-    """ Any other login exception """
-
-
-class Ems2Expectation(Ems2BaseException):
-    """ Any other exception """
-
-
-class Ems2ExceedRateLimit(Ems2BaseException):
-    """ API reaches rate limit """
+__all__ = [
+    "Ems2BaseException",
+    "Ems2TokenNotFound",
+    "Ems2TokenExpired",
+    "Ems2InvalidRefreshToken",
+    "Ems2TooManyRequest",
+    "Ems2LoginFailed",
+    "Ems2Expectation",
+    "Ems2ExceedRateLimit",
+]

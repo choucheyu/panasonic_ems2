@@ -1,8 +1,6 @@
 """ Panasonic Smart Home """
 import logging
 import asyncio
-from http import HTTPStatus
-import requests
 import json
 from datetime import datetime, timedelta
 import pytz
@@ -11,18 +9,19 @@ from typing import Literal
 from homeassistant.components.recorder.models import StatisticData, StatisticMetaData, StatisticMeanType
 from homeassistant.components.recorder.statistics import async_add_external_statistics
 from homeassistant.helpers.update_coordinator import UpdateFailed
-from homeassistant.helpers.storage import Store
-from homeassistant.const import CONTENT_TYPE_JSON, EVENT_HOMEASSISTANT_STOP, UnitOfEnergy, UnitOfVolume
+from homeassistant.const import UnitOfEnergy, UnitOfVolume
 from homeassistant.util.unit_conversion import EnergyConverter, VolumeConverter
 
-from .exceptions import (
+from ..api import endpoints as apis
+from ..api.client import PanasonicApiClient
+from ..api.errors import (
     Ems2TokenNotFound,
     Ems2LoginFailed,
     Ems2ExceedRateLimit,
     Ems2Expectation,
     Ems2TooManyRequest
 )
-from . import apis
+from ..api.token_store import PanasonicTokenStore
 from .command_metadata import refactor_command_metadata
 from .statistics_builder import build_user_info_external_statistics_rows
 from .user_info_series import parse_user_info_series
@@ -128,6 +127,13 @@ class PanasonicSmartHome(object):
         self.email = account
         self.password = password
         self._session = session
+        self._api_client = PanasonicApiClient(
+            session=session,
+            account=account,
+            user_agent=HA_USER_AGENT,
+            request_timeout=REQUEST_TIMEOUT,
+        )
+        self._token_store = PanasonicTokenStore(hass, account)
         self._devices = []
         self._select_devices = []
         self._commands = []
@@ -154,66 +160,17 @@ class PanasonicSmartHome(object):
         params=None,
         data=None,
     ):
-        """Shared request method"""
-        res = {}
-        headers["user-agent"] = HA_USER_AGENT
-        headers["Content-Type"] = CONTENT_TYPE_JSON
-
-        self._api_counts = self._api_counts + 1
-        self._api_counts_per_hour = self._api_counts_per_hour + 1
-        try:
-            response = await self._session.request(
-                method,
-                url=endpoint,
-                json=data,
-                params=params,
-                headers=headers,
-                timeout=REQUEST_TIMEOUT
-            )
-        except requests.exceptions.RequestException:
-            _LOGGER.error(f"Failed fetching data for {self.email}")
-            return {}
-        except Exception as e:
-            # request timeout
-            # _LOGGER.error(f"{endpoint} {headers['GWID']} request exception {e}, timeout?")
-            return {}
-
-        if response.status == HTTPStatus.OK:
-            try:
-                res = await response.json()
-            except:
-                res = response.text
-        elif response.status == HTTPStatus.BAD_REQUEST:
-            raise Ems2ExceedRateLimit
-        elif response.status == HTTPStatus.FORBIDDEN:
-            raise Ems2LoginFailed
-        elif response.status == HTTPStatus.TOO_MANY_REQUESTS:
-            raise Ems2TooManyRequest
-        elif response.status == HTTPStatus.EXPECTATION_FAILED:
-            raise Ems2Expectation
-        elif response.status == HTTPStatus.NOT_FOUND:
-            _LOGGER.warning(f"Use wrong method or parameters")
-            res = {}
-        elif response.status == HTTPStatus.METHOD_NOT_ALLOWED:
-            _LOGGER.warning(f"The method is not allowed")
-            res = {}
-        elif response.status == 429:
-            _LOGGER.warning(f"Wrong")
-            res = {}
-        else:
-            _LOGGER.error(f"request  {response}")
-            raise Ems2TokenNotFound
-
-        if isinstance(res, str):
-            return {"data": res}
-
-        if isinstance(res, list):
-            return {"data": res}
-
-        if isinstance(res, dict):
-            return res
-
-        return res
+        """Shared request wrapper preserving the PanasonicSmartHome public seam."""
+        response = await self._api_client.request(
+            method=method,
+            headers=headers,
+            endpoint=endpoint,
+            params=params,
+            data=data,
+        )
+        self._api_counts = self._api_client.api_counts
+        self._api_counts_per_hour = self._api_client.api_counts_per_hour
+        return response
 
     @property
     def token(self) -> bool:
@@ -235,28 +192,7 @@ class PanasonicSmartHome(object):
         """
         get the number of user accounts
         """
-        accounts = 0
-        store = Store(self.hass, 1, f"{DOMAIN}/tokens.json")
-        data = await store.async_load() or None
-        if not data:
-            return 1
-
-        for _, value in data.items():
-            token_timeout = value[CONF_TOKEN_TIMEOUT]
-            now = datetime.now()
-            timeout = datetime(
-                int(token_timeout[:4]),
-                int(token_timeout[4:6]),
-                int(token_timeout[6:8]),
-                int(token_timeout[8:10]),
-                int(token_timeout[10:12]),
-                int(token_timeout[12:])
-            )
-
-            if int(timeout.timestamp() - now.timestamp()) > 0:
-                accounts = accounts + 1
-
-        return accounts
+        return await self._token_store.active_account_count()
 
     @api_status
     async def login(self):
@@ -1091,47 +1027,24 @@ class PanasonicSmartHome(object):
         """
         Update tokens in .storage
         """
-        default = {
-                CONF_CPTOKEN: "",
-                CONF_TOKEN_TIMEOUT: "20200101010100",
-                CONF_REFRESH_TOKEN: "",
-                CONF_REFRESH_TOKEN_TIMEOUT: "20200101010100"
-            }
-        store = Store(self.hass, 1, f"{DOMAIN}/tokens.json")
-        data = await store.async_load() or None
-        if not data:
-            # force login
-            return default
-        tokens = data.get(self.email, default)
+        tokens = await self._token_store.load_tokens()
 
-        # noinspection PyUnusedLocal
-        async def stop(*args):
-            # save devices data to .storage
-            tokens = {
+        def current_tokens():
+            return {
                 CONF_CPTOKEN: self._cp_token,
                 CONF_TOKEN_TIMEOUT: self._token_timeout,
                 CONF_REFRESH_TOKEN: self._refresh_token,
                 CONF_REFRESH_TOKEN_TIMEOUT: self._refresh_token_timeout
             }
-            data = {
-                self.email: tokens
-            }
-            await store.async_save(data)
 
-        self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop)
+        self._token_store.async_listen_save_on_stop(current_tokens)
         return tokens
 
     async def async_store_tokens(self, tokens: dict):
         """
         Update tokens in .storage
         """
-        store = Store(self.hass, 1, f"{DOMAIN}/tokens.json")
-        data = await store.async_load() or {}
-        data = {
-            self.email: tokens
-        }
-
-        await store.async_save(data)
+        await self._token_store.store_tokens(tokens)
 
     @api_status
     async def async_check_tokens(self, tokens=None):
@@ -1180,6 +1093,7 @@ class PanasonicSmartHome(object):
                 CONF_REFRESH_TOKEN_TIMEOUT: refresh_token_timeout,
             })
             self._api_counts_per_hour = 0
+            self._api_client.api_counts_per_hour = 0
 
         timeout = datetime(
             int(token_timeout[:4]),
@@ -1206,6 +1120,7 @@ class PanasonicSmartHome(object):
                 CONF_REFRESH_TOKEN_TIMEOUT: refresh_token_timeout,
             })
             self._api_counts_per_hour = 0
+            self._api_client.api_counts_per_hour = 0
         else:
             self._cp_token = cptoken
             self._token_timeout = token_timeout
