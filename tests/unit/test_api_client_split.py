@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import asyncio
 import importlib.util
+import logging
 import sys
 import types
 from http import HTTPStatus
@@ -210,6 +211,22 @@ def test_api_client_request_returns_empty_dict_on_transport_error() -> None:
     assert asyncio.run(client.request("GET", headers={}, endpoint="https://example.invalid/api")) == {}
     assert client.api_counts == 1
     assert client.api_counts_per_hour == 1
+
+
+def test_api_client_transport_error_log_redacts_account_and_exception_detail(caplog) -> None:
+    PanasonicApiClient = _load_api_module("client").PanasonicApiClient
+
+    account = "sensitive.user@example.com"
+    session = _Session(raises=TimeoutError(f"timeout while fetching {account}"))
+    client = PanasonicApiClient(session=session, account=account)
+    caplog.set_level(logging.WARNING)
+
+    assert asyncio.run(client.request("GET", headers={}, endpoint="https://example.invalid/api")) == {}
+
+    assert account not in caplog.text
+    assert "sensitive.user" not in caplog.text
+    assert "timeout while fetching" not in caplog.text
+    assert "account=<redacted>" in caplog.text
 
 
 def test_cloud_uses_api_client_and_token_store_seams_instead_of_owning_http_logic() -> None:

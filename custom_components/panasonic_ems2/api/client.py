@@ -19,6 +19,11 @@ CONTENT_TYPE_JSON = "application/json"
 _LOGGER = logging.getLogger(__name__)
 
 
+def _redact_account(_account: str) -> str:
+    """Return a stable placeholder instead of logging Panasonic account IDs."""
+    return "<redacted>"
+
+
 class PanasonicApiClient:
     """Small HTTP client wrapper for Panasonic EMS2 cloud requests."""
 
@@ -62,7 +67,14 @@ class PanasonicApiClient:
                 timeout=self._request_timeout,
             )
         except Exception as exc:
-            _LOGGER.error("Failed fetching data for %s: %s", self._account, exc)
+            _LOGGER.warning(
+                "Failed fetching Panasonic EMS2 data for account=%s",
+                _redact_account(self._account),
+            )
+            _LOGGER.debug(
+                "Panasonic EMS2 request failed with %s",
+                exc.__class__.__name__,
+            )
             return {}
 
         if response.status == HTTPStatus.OK:
