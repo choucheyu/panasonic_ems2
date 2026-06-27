@@ -6,8 +6,9 @@ import ast
 import asyncio
 from datetime import datetime
 from pathlib import Path
+import logging
 
-from tests.helpers.source_parsing import load_method_function
+from tests.helpers.source_parsing import _load_core_module, load_method_function
 
 ROOT = Path(__file__).resolve().parents[2]
 CLOUD = ROOT / "custom_components" / "panasonic_ems2" / "core" / "cloud.py"
@@ -198,3 +199,152 @@ def test_get_user_info_skips_empty_information_rows_and_missing_totals() -> None
         "water_used": 0,
     }
     assert client._devices_info["empty"]["Information"] == []
+
+
+def test_get_device_with_info_splits_large_payloads_and_merges_chunks() -> None:
+    cloud_commands = _load_core_module("cloud_commands")
+    cloud_status = _load_core_module("cloud_status")
+
+    class FakeApis:
+        @staticmethod
+        def post_device_get_info() -> str:
+            return "https://example.invalid/api/DeviceGetInfo"
+
+    get_device_with_info = load_method_function(
+        CLOUD,
+        class_name="PanasonicSmartHome",
+        method_name="get_device_with_info",
+        globals_env={
+            "api_status": lambda func: func,
+            "apis": FakeApis,
+            "asyncio": asyncio,
+            "_LOGGER": logging.getLogger("test.panasonic_ems2.cloud"),
+            "chunk_command_type_payload": cloud_commands.chunk_command_type_payload,
+            "merge_device_information_chunks": cloud_status.merge_device_information_chunks,
+        },
+    )
+
+    class FakeClient:
+        _cp_token = "token"
+        _devices_info = {"gw": {"ModelType": "MODEL"}}
+
+        def __init__(self) -> None:
+            self.requests = []
+
+        def _get_device_commands(self, *_args):
+            return [{"CommandType": "0x00"}]
+
+        def _refactor_info(self, model_type, devices_info):
+            return cloud_status.refactor_device_information(model_type, devices_info)
+
+        async def request(self, **kwargs):
+            self.requests.append(kwargs["data"])
+            command_types = kwargs["data"][0]["CommandTypes"]
+            return {
+                "status": "success",
+                "devices": [
+                    {
+                        "DeviceID": kwargs["data"][0]["DeviceID"],
+                        "Info": [
+                            {"CommandType": item["CommandType"], "status": len(self.requests)}
+                            for item in command_types
+                        ],
+                    }
+                ],
+            }
+
+    commands = [{"CommandType": f"0x{i:02X}"} for i in range(1, 25)]
+    device = {
+        "GWID": "gw",
+        "Auth": "auth",
+        "DeviceType": "1",
+        "ModelType": "MODEL",
+        "Model": "MODEL-CODE",
+        "Devices": [{"DeviceID": 1}],
+    }
+    client = FakeClient()
+
+    info = asyncio.run(get_device_with_info(client, device, commands))
+
+    chunk_size = cloud_commands.DEVICE_GET_INFO_COMMAND_CHUNK_SIZE
+    assert len(client.requests) > 1
+    assert all(len(request[0]["CommandTypes"]) <= chunk_size for request in client.requests)
+    status = info[0]["status"]
+    assert "0x00" in status
+    assert all(command["CommandType"] in status for command in commands)
+    assert len(status) == 25
+
+
+def test_get_device_with_info_continues_after_empty_chunk_response(caplog) -> None:
+    cloud_commands = _load_core_module("cloud_commands")
+    cloud_status = _load_core_module("cloud_status")
+
+    class FakeApis:
+        @staticmethod
+        def post_device_get_info() -> str:
+            return "https://example.invalid/api/DeviceGetInfo"
+
+    logger = logging.getLogger("test.panasonic_ems2.cloud.chunk_failure")
+    get_device_with_info = load_method_function(
+        CLOUD,
+        class_name="PanasonicSmartHome",
+        method_name="get_device_with_info",
+        globals_env={
+            "api_status": lambda func: func,
+            "apis": FakeApis,
+            "asyncio": asyncio,
+            "_LOGGER": logger,
+            "chunk_command_type_payload": cloud_commands.chunk_command_type_payload,
+            "merge_device_information_chunks": cloud_status.merge_device_information_chunks,
+        },
+    )
+
+    class FakeClient:
+        _cp_token = "token"
+        _devices_info = {"gw": {"ModelType": "MODEL"}}
+
+        def __init__(self) -> None:
+            self.requests = []
+
+        def _get_device_commands(self, *_args):
+            return []
+
+        def _refactor_info(self, model_type, devices_info):
+            return cloud_status.refactor_device_information(model_type, devices_info)
+
+        async def request(self, **kwargs):
+            self.requests.append(kwargs["data"])
+            if len(self.requests) == 1:
+                return {}
+            command_types = kwargs["data"][0]["CommandTypes"]
+            return {
+                "status": "success",
+                "devices": [
+                    {
+                        "DeviceID": kwargs["data"][0]["DeviceID"],
+                        "Info": [
+                            {"CommandType": item["CommandType"], "status": 2}
+                            for item in command_types
+                        ],
+                    }
+                ],
+            }
+
+    commands = [{"CommandType": f"0x{i:02X}"} for i in range(24)]
+    device = {
+        "GWID": "gw",
+        "Auth": "auth",
+        "DeviceType": "1",
+        "ModelType": "MODEL",
+        "Model": "MODEL-CODE",
+        "Devices": [{"DeviceID": 1}],
+    }
+    caplog.set_level(logging.WARNING, logger=logger.name)
+
+    info = asyncio.run(get_device_with_info(FakeClient(), device, commands))
+
+    assert len(info) == 1
+    assert "DeviceGetInfo chunk failed" in caplog.text
+    assert "device_type=1" in caplog.text
+    assert "model_type=MODEL" in caplog.text
+    assert "command_count=" in caplog.text

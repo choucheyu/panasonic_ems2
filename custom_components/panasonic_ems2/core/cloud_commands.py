@@ -22,6 +22,33 @@ from .constants.light import (
 )
 
 DEFAULT_POWER_COMMAND_TYPES = [{"CommandType": "0x00"}]
+DEVICE_GET_INFO_COMMAND_CHUNK_SIZE = 12
+
+
+def chunk_command_type_payload(
+    command_types: Sequence[Mapping[str, Any]],
+    *,
+    max_commands: int = DEVICE_GET_INFO_COMMAND_CHUNK_SIZE,
+) -> list[list[dict[str, Any]]]:
+    """Dedupe and split DeviceGetInfo CommandTypes into bounded chunks."""
+    if max_commands < 1:
+        raise ValueError("max_commands must be positive")
+
+    deduped: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in command_types:
+        if not isinstance(item, Mapping):
+            continue
+        command_type = item.get("CommandType")
+        if not isinstance(command_type, str) or command_type in seen:
+            continue
+        seen.add(command_type)
+        deduped.append(dict(item))
+
+    return [
+        deduped[index : index + max_commands]
+        for index in range(0, len(deduped), max_commands)
+    ]
 
 
 def _command_type_payload(commands: Sequence[str]) -> list[dict[str, str]]:

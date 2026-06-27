@@ -50,8 +50,29 @@ def normalize_command_status(model_type: str, command_type: str, status: Any) ->
     return command_type, new_status
 
 
+def merge_device_information_chunks(devices_info: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Merge multiple DeviceGetInfo chunk responses by DeviceID."""
+    merged: dict[Any, dict[str, Any]] = {}
+    order: list[Any] = []
+    for device in devices_info:
+        if not isinstance(device, dict):
+            continue
+        device_id = device.get("DeviceID")
+        if device_id is None:
+            continue
+        if device_id not in merged:
+            merged[device_id] = dict(device)
+            merged[device_id]["Info"] = []
+            order.append(device_id)
+        info = device.get("Info", [])
+        if isinstance(info, list):
+            merged[device_id]["Info"].extend(info)
+    return [merged[device_id] for device_id in order]
+
+
 def refactor_device_information(model_type: str, devices_info: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Convert DeviceGetInfo ``Info`` arrays into status dictionaries."""
+    devices_info = merge_device_information_chunks(devices_info)
     if len(devices_info) < 1:
         return []
 
@@ -60,7 +81,7 @@ def refactor_device_information(model_type: str, devices_info: list[dict[str, An
         device_id = device.get("DeviceID", None)
         if device_id is None:
             continue
-        device_info = device["Info"]
+        device_info = device.get("Info", [])
         device_status: dict[str, Any] = {}
         for info in device_info:
             command_type, status = normalize_command_status(

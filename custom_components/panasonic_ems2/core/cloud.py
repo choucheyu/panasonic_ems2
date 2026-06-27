@@ -31,12 +31,14 @@ from .capabilities import (
 from .cloud_commands import (
     build_light_device_command_types,
     build_polling_command_types,
+    chunk_command_type_payload,
     filter_supplemental_snapshot,
     get_supplemental_keys,
     merge_supplemental_status,
 )
 from .cloud_status import (
     build_offline_information,
+    merge_device_information_chunks,
     normalize_command_status,
     refactor_device_information,
 )
@@ -301,31 +303,43 @@ class PanasonicSmartHome(object):
             "auth": device["Auth"],
             "GWID": gwid
         }
-        data = []
-        device_func = []
-        for dev in device["Devices"]:
-            if dev:
-                device_id = dev.get("DeviceID", 1)
-                device_func = self._get_device_commands(
-                                device["DeviceType"],
-                                device["ModelType"],
-                                device["Model"],
-                                device_id
-                            )
-                device_func.extend(func)
-                data.append(
-                    {"CommandTypes": device_func, "DeviceID": device_id}
+        raw_devices = []
+        for dev_idx, dev in enumerate(device.get("Devices", []), start=1):
+            if not dev:
+                continue
+            device_id = dev.get("DeviceID", 1)
+            device_func = [
+                *self._get_device_commands(
+                    device["DeviceType"], device["ModelType"], device["Model"], device_id
+                ),
+                *func,
+            ]
+            chunks = chunk_command_type_payload(device_func)
+            for chunk_idx, command_chunk in enumerate(chunks, start=1):
+                response = await self.request(
+                    method="POST",
+                    headers=header,
+                    data=[{"CommandTypes": command_chunk, "DeviceID": device_id}],
+                    endpoint=apis.post_device_get_info(),
                 )
-        response = await self.request(
-            method="POST", headers=header, data=data, endpoint=apis.post_device_get_info()
-        )
+                if response.get("status", "") == "success":
+                    raw_devices.extend(response.get("devices", []))
+                    continue
+                _LOGGER.warning(
+                    "Panasonic EMS2 DeviceGetInfo chunk failed device_type=%s model_type=%s device_index=%s chunk_index=%s chunk_count=%s command_count=%s",
+                    device.get("DeviceType"),
+                    device.get("ModelType"),
+                    dev_idx,
+                    chunk_idx,
+                    len(chunks),
+                    len(command_chunk),
+                )
+                await asyncio.sleep(.05)
 
-        info = []
-        if response.get("status", "") == "success":
-            info = self._refactor_info(
-                self._devices_info[gwid]["ModelType"],
-                response["devices"]
-            )
+        info = self._refactor_info(
+            self._devices_info[gwid]["ModelType"],
+            merge_device_information_chunks(raw_devices),
+        )
 
         if len(info) >= 1:
             self._devices_info[gwid]["Information"] = info
