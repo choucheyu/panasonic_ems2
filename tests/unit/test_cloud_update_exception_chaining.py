@@ -348,3 +348,4 @@ def test_get_device_with_info_continues_after_empty_chunk_response(caplog) -> No
     assert "device_type=1" in caplog.text
     assert "model_type=MODEL" in caplog.text
     assert "command_count=" in caplog.text
+    assert "commands=" in caplog.text

@@ -326,13 +326,14 @@ class PanasonicSmartHome(object):
                     raw_devices.extend(response.get("devices", []))
                     continue
                 _LOGGER.warning(
-                    "Panasonic EMS2 DeviceGetInfo chunk failed device_type=%s model_type=%s device_index=%s chunk_index=%s chunk_count=%s command_count=%s",
+                    "Panasonic EMS2 DeviceGetInfo chunk failed device_type=%s model_type=%s device_index=%s chunk_index=%s chunk_count=%s command_count=%s commands=%s",
                     device.get("DeviceType"),
                     device.get("ModelType"),
                     dev_idx,
                     chunk_idx,
                     len(chunks),
                     len(command_chunk),
+                    [item.get("CommandType") for item in command_chunk],
                 )
                 await asyncio.sleep(.05)
 

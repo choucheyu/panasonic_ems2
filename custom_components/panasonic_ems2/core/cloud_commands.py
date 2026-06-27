@@ -22,7 +22,7 @@ from .constants.light import (
 )
 
 DEFAULT_POWER_COMMAND_TYPES = [{"CommandType": "0x00"}]
-DEVICE_GET_INFO_COMMAND_CHUNK_SIZE = 12
+DEVICE_GET_INFO_COMMAND_CHUNK_SIZE = 4
 
 
 def chunk_command_type_payload(
