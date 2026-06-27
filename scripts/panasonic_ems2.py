@@ -19,7 +19,23 @@ from pathlib import Path
 from typing import Any, Final, Literal
 from urllib.parse import urlparse
 
-import requests
+try:
+    import requests
+except ModuleNotFoundError:  # pragma: no cover - exercised by import guard test
+    class _MissingRequestsException(Exception):
+        """Raised when the standalone helper is run without requests installed."""
+
+    class _MissingRequests:
+        class exceptions:  # noqa: D106 - mimic requests.exceptions namespace
+            RequestException = _MissingRequestsException
+
+        @staticmethod
+        def request(*_args, **_kwargs):
+            raise _MissingRequestsException(
+                "The 'requests' package is required. Install it with: pip install requests"
+            )
+
+    requests = _MissingRequests()
 
 
 HA_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1"

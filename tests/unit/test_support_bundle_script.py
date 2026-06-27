@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import builtins
 import importlib.util
 import json
 from http import HTTPStatus
@@ -21,6 +22,22 @@ def _load_script_module():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def test_script_imports_without_requests_dependency(monkeypatch) -> None:
+    real_import = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name == "requests":
+            raise ModuleNotFoundError("No module named 'requests'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+
+    module = _load_script_module()
+
+    assert hasattr(module.requests, "request")
+    assert issubclass(module.requests.exceptions.RequestException, Exception)
 
 
 class _FakeResponse:
