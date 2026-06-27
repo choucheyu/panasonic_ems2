@@ -48,6 +48,7 @@ SCRIPT_VERSION = "0.2.0"
 DEFAULT_DEVICE_GET_INFO_BATCH_SIZE = 30
 DEFAULT_SUPPLEMENTAL_BATCH_SIZE = 16
 DEFAULT_REQUEST_DELAY_SECONDS = 0.1
+MAX_SUPPLEMENTAL_PROBE_KEYS = 128
 
 OBSERVATION_TEMPLATE = """## 裝置支援觀察補充
 
@@ -210,11 +211,24 @@ def command_types_for_device(device: Mapping[str, Any], command_list: Sequence[M
     return command_types
 
 
-def _candidate_command_types(start: str = "0x00", end: str = "0x7F") -> list[str]:
-    start_int = int(start, 16)
-    end_int = int(end, 16)
+def _candidate_command_types(
+    start: str = "0x00",
+    end: str = "0x7F",
+    *,
+    max_keys: int = MAX_SUPPLEMENTAL_PROBE_KEYS,
+) -> list[str]:
+    try:
+        start_int = int(start, 16)
+        end_int = int(end, 16)
+    except ValueError as ex:
+        raise ValueError("supplemental probe range values must be hex strings like 0x00") from ex
     if end_int < start_int:
         start_int, end_int = end_int, start_int
+    count = end_int - start_int + 1
+    if count > max_keys:
+        raise ValueError(
+            f"supplemental probe range is too large ({count} keys); maximum is {max_keys}"
+        )
     return [f"0x{value:02X}" for value in range(start_int, end_int + 1)]
 
 
@@ -234,7 +248,15 @@ class _Redactor:
         "token",
     }
     _GWID_KEYS = {"gwid", "gw_id", "gatewayid"}
-    _PERSONAL_NAME_KEYS = {"nickname", "devicename"}
+    _PERSONAL_NAME_KEYS = {
+        "devicename",
+        "devicenickname",
+        "gatewayname",
+        "gwname",
+        "name",
+        "nickname",
+        "roomname",
+    }
 
     def __init__(self) -> None:
         self._gwid_map: dict[str, str] = {}

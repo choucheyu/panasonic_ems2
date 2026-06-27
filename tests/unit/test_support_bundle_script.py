@@ -6,10 +6,13 @@ import asyncio
 import builtins
 import importlib.util
 import json
+import logging
 from http import HTTPStatus
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "panasonic_ems2.py"
@@ -78,6 +81,11 @@ def test_support_bundle_redacts_sensitive_identifiers_but_preserves_command_meta
                 "GWID": "GWID_REAL_1",
                 "Auth": "AUTH_REAL_1",
                 "NickName": "住家洗衣機",
+                "DeviceNickName": "主要洗衣機",
+                "GWName": "家庭閘道",
+                "GatewayName": "後陽台",
+                "RoomName": "洗衣間",
+                "name": "小孩房",
                 "DeviceType": "3",
                 "ModelType": "HDH",
                 "Model": "NA-V160HDH",
@@ -116,6 +124,11 @@ def test_support_bundle_redacts_sensitive_identifiers_but_preserves_command_meta
     assert "AUTH_REAL_1" not in dumped
     assert "GWID_REAL_1" not in dumped
     assert "住家洗衣機" not in dumped
+    assert "主要洗衣機" not in dumped
+    assert "家庭閘道" not in dumped
+    assert "後陽台" not in dumped
+    assert "洗衣間" not in dumped
+    assert "小孩房" not in dumped
     assert bundle["redaction"]["enabled"] is True
     assert bundle["devices"][0]["GWID"] == "GWID_1"
     assert bundle["command_list"][0]["JSON"][0]["CommandName"] == "運轉情報"
@@ -129,6 +142,11 @@ def test_collect_support_bundle_fetches_read_only_snapshots(monkeypatch) -> None
         "GWID": "GWID_REAL_1",
         "Auth": "AUTH_REAL_1",
         "NickName": "住家洗衣機",
+        "DeviceNickName": "主要洗衣機",
+        "GWName": "家庭閘道",
+        "GatewayName": "後陽台",
+        "RoomName": "洗衣間",
+        "name": "小孩房",
         "DeviceType": "3",
         "ModelType": "HDH",
         "Model": "NA-V160HDH",
@@ -223,3 +241,77 @@ def test_write_support_files_creates_bundle_and_legacy_files(tmp_path) -> None:
     assert json.loads(paths["bundle"].read_text(encoding="utf-8"))["script_version"] == "0.1.0"
     assert json.loads((tmp_path / "panasonic_devices.json").read_text(encoding="utf-8")) == bundle["devices"]
     assert json.loads((tmp_path / "panasonic_commands.json").read_text(encoding="utf-8")) == bundle["command_list"]
+
+
+def test_request_error_logging_does_not_leak_credentials_or_identifiers(monkeypatch, caplog) -> None:
+    module = _load_script_module()
+
+    def fake_request(**_kwargs):
+        raise module.requests.exceptions.RequestException("CP_TOKEN_REAL AUTH_REAL GWID_REAL user@example.com secret")
+
+    monkeypatch.setattr(module.requests, "request", fake_request)
+    client = module.PanasonicSmartHome(None, None, "user@example.com", "secret")
+
+    with caplog.at_level(logging.ERROR):
+        result = asyncio.run(
+            client.request(
+                method="GET",
+                headers={"CPToken": "CP_TOKEN_REAL", "auth": "AUTH_REAL", "GWID": "GWID_REAL"},
+                endpoint="https://example.test/api/UserGetDeviceStatus?token=CP_TOKEN_REAL",
+            )
+        )
+
+    assert result == {}
+    logged = "\n".join(record.getMessage() for record in caplog.records)
+    assert "/api/UserGetDeviceStatus" in logged
+    for secret in ["CP_TOKEN_REAL", "AUTH_REAL", "GWID_REAL", "user@example.com", "secret"]:
+        assert secret not in logged
+        assert secret not in "\n".join(client.errors)
+
+
+def test_get_devices_writes_redacted_files_by_default_and_raw_only_when_requested(monkeypatch, tmp_path) -> None:
+    module = _load_script_module()
+    raw_info = {
+        "GwList": [{"GWID": "GWID_REAL_1", "Auth": "AUTH_REAL_1", "NickName": "住家洗衣機"}],
+        "CommandList": [{"ModelType": "HDH", "JSON": [{"CommandType": "0x50", "CommandName": "運轉情報"}]}],
+    }
+
+    class FakeClient:
+        def __init__(self, *_args) -> None:
+            return None
+
+        async def collect_support_bundle(self, *, redacted, **_kwargs):
+            return module.build_support_bundle(raw_info, collected_at="2026-06-27T00:00:00+00:00", redacted=redacted)
+
+    monkeypatch.setattr(module, "PanasonicSmartHome", FakeClient)
+
+    asyncio.run(module.get_devices("user@example.com", "secret", output_dir=tmp_path / "redacted", request_delay=0))
+    redacted_text = (tmp_path / "redacted" / "panasonic_devices.json").read_text(encoding="utf-8")
+    assert "GWID_REAL_1" not in redacted_text
+    assert "AUTH_REAL_1" not in redacted_text
+    assert "住家洗衣機" not in redacted_text
+    assert "GWID_1" in redacted_text
+
+    asyncio.run(
+        module.get_devices(
+            "user@example.com",
+            "secret",
+            output_dir=tmp_path / "raw",
+            raw_output=True,
+            request_delay=0,
+        )
+    )
+    raw_text = (tmp_path / "raw" / "panasonic_devices.json").read_text(encoding="utf-8")
+    assert "GWID_REAL_1" in raw_text
+    assert "AUTH_REAL_1" in raw_text
+    assert "住家洗衣機" in raw_text
+
+
+def test_supplemental_probe_range_is_capped_to_avoid_unexpected_api_volume() -> None:
+    module = _load_script_module()
+
+    assert len(module._candidate_command_types("0x00", "0x7F")) == module.MAX_SUPPLEMENTAL_PROBE_KEYS
+    with pytest.raises(ValueError, match="too large"):
+        module._candidate_command_types("0x00", "0x80")
+    with pytest.raises(ValueError, match="hex"):
+        module._candidate_command_types("not-a-hex", "0x7F")
