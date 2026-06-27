@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+import time
 from http import HTTPStatus
 from typing import Any, Literal
+from urllib.parse import urlsplit
 
 from .errors import (
     Ems2Expectation,
@@ -22,6 +24,12 @@ _LOGGER = logging.getLogger(__name__)
 def _redact_account(_account: str) -> str:
     """Return a stable placeholder instead of logging Panasonic account IDs."""
     return "<redacted>"
+
+
+def _safe_endpoint_label(endpoint: str) -> str:
+    """Return a log-safe endpoint label without query parameters or secrets."""
+    path = urlsplit(endpoint).path
+    return path or "/"
 
 
 class PanasonicApiClient:
@@ -57,6 +65,7 @@ class PanasonicApiClient:
 
         self.api_counts = self.api_counts + 1
         self.api_counts_per_hour = self.api_counts_per_hour + 1
+        request_start = time.monotonic()
         try:
             response = await self._session.request(
                 method,
@@ -67,13 +76,14 @@ class PanasonicApiClient:
                 timeout=self._request_timeout,
             )
         except Exception as exc:
+            duration_ms = int((time.monotonic() - request_start) * 1000)
             _LOGGER.warning(
-                "Failed fetching Panasonic EMS2 data for account=%s",
+                "Failed fetching Panasonic EMS2 data for account=%s method=%s endpoint=%s exception=%s duration_ms=%s",
                 _redact_account(self._account),
-            )
-            _LOGGER.debug(
-                "Panasonic EMS2 request failed with %s",
+                method,
+                _safe_endpoint_label(endpoint),
                 exc.__class__.__name__,
+                duration_ms,
             )
             return {}
 

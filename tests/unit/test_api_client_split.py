@@ -224,7 +224,7 @@ def test_api_client_request_returns_empty_dict_on_transport_error() -> None:
     assert client.api_counts_per_hour == 1
 
 
-def test_api_client_transport_error_log_redacts_account_and_exception_detail(caplog) -> None:
+def test_api_client_transport_error_log_redacts_account_and_adds_diagnostics(caplog) -> None:
     PanasonicApiClient = _load_api_module("client").PanasonicApiClient
 
     account = "sensitive.user@example.com"
@@ -232,12 +232,26 @@ def test_api_client_transport_error_log_redacts_account_and_exception_detail(cap
     client = PanasonicApiClient(session=session, account=account)
     caplog.set_level(logging.WARNING)
 
-    assert asyncio.run(client.request("GET", headers={}, endpoint="https://example.invalid/api")) == {}
+    assert (
+        asyncio.run(
+            client.request(
+                "POST",
+                headers={},
+                endpoint="https://example.invalid/api/DeviceGetInfo?secret=not-logged",
+            )
+        )
+        == {}
+    )
 
     assert account not in caplog.text
     assert "sensitive.user" not in caplog.text
     assert "timeout while fetching" not in caplog.text
+    assert "secret=not-logged" not in caplog.text
     assert "account=<redacted>" in caplog.text
+    assert "method=POST" in caplog.text
+    assert "endpoint=/api/DeviceGetInfo" in caplog.text
+    assert "exception=TimeoutError" in caplog.text
+    assert "duration_ms=" in caplog.text
 
 
 def test_cloud_uses_api_client_and_token_store_seams_instead_of_owning_http_logic() -> None:
