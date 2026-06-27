@@ -95,7 +95,7 @@ custom_components/panasonic_ems2
 
 ## 協助新增或修正裝置支援
 
-如果你的家電沒有出現、實體不完整，或控制行為異常，請先收集該裝置的型號與 command metadata。
+如果你的家電沒有出現、實體不完整，或控制行為異常，請先收集一份已遮蔽個資的 support bundle。單靠 command metadata 通常不足以安全新增實體或控制；唯讀 live snapshot 可以幫助判斷型號特定狀態值、補充 `DeviceGetInfo` key、統計資料支援與更新資訊。
 
 1. 安裝 Python 3。
 2. 下載本 repo 的輔助腳本：
@@ -111,7 +111,33 @@ custom_components/panasonic_ems2
    python panasonic_ems2.py
    ```
 
-4. 腳本會產生 device / command JSON 檔。請在本 repo 開 issue，附上相關型號與 command 資訊。分享前請先移除 token、帳號或個人資料。
+4. 腳本會產生一份帶時間戳記且預設遮蔽的 support bundle：
+
+   ```text
+   panasonic_ems2_support_bundle_<timestamp>.json
+   ```
+
+   同時也會保留相容用的舊檔 `panasonic_devices.json` 與 `panasonic_commands.json`。
+
+bundle 內容包含：
+
+- `UserGetRegisteredGwList2` 回傳的 `GwList` 與 `CommandList`。
+- 唯讀 `UserGetDeviceStatus` snapshot。
+- 針對 CommandList 內 command 的唯讀 `DeviceGetInfo` snapshot。
+- 用於統計 / 更新分析的 `UserGetInfo` 與 `S3/UpdateCheck` snapshot。
+- 一份簡短觀察模板，用來補充官方 App 狀態、實體裝置狀態，以及 metadata 無法推論 command 語意時的 before/after 行為。
+
+預設會遮蔽 auth、token、GWID、暱稱與裝置名稱；分享前仍請自行檢查 JSON。只有在本機私下除錯時才建議明確輸出 raw 檔：
+
+```bash
+python panasonic_ems2.py --raw-output
+```
+
+補充 command probe 會增加唯讀 API 呼叫量，因此必須明確 opt-in：
+
+```bash
+python panasonic_ems2.py --probe-supplemental
+```
 
 ## 來源標示
 

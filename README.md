@@ -95,7 +95,7 @@ Different units are split into different cards so wash count is not displayed as
 
 ## Help add or fix device support
 
-If your appliance is missing, has incomplete entities, or behaves incorrectly, please collect the device model and command metadata.
+If your appliance is missing, has incomplete entities, or behaves incorrectly, please collect a redacted support bundle. Command metadata alone is often not enough to safely add entities or controls; read-only live snapshots help identify model-specific status values, supplemental `DeviceGetInfo` keys, statistics support, and update information.
 
 1. Install Python 3.
 2. Download the helper script from this repository:
@@ -111,7 +111,33 @@ If your appliance is missing, has incomplete entities, or behaves incorrectly, p
    python panasonic_ems2.py
    ```
 
-4. The script generates device/command JSON files. Open an issue in this repository and attach the relevant model and command information. Remove account tokens or personal information before sharing.
+4. The script generates a timestamped redacted support bundle:
+
+   ```text
+   panasonic_ems2_support_bundle_<timestamp>.json
+   ```
+
+   It also writes the legacy compatibility files `panasonic_devices.json` and `panasonic_commands.json`.
+
+The bundle includes:
+
+- `GwList` and `CommandList` from `UserGetRegisteredGwList2`.
+- Read-only `UserGetDeviceStatus` snapshot.
+- Read-only `DeviceGetInfo` snapshots for CommandList-backed commands.
+- `UserGetInfo` and `S3/UpdateCheck` snapshots for statistics/update analysis.
+- A short observation template for official-app state, physical device state, and before/after behavior when command semantics cannot be inferred from metadata alone.
+
+Redaction is enabled by default for auth values, tokens, GWIDs, nicknames, and device names. Please still review the JSON before sharing. Raw output is available only as an explicit local-debug option:
+
+```bash
+python panasonic_ems2.py --raw-output
+```
+
+Supplemental probing is opt-in because it increases read-only API calls:
+
+```bash
+python panasonic_ems2.py --probe-supplemental
+```
 
 ## Attribution
 
