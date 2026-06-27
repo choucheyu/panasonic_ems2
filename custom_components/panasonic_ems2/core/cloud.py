@@ -524,23 +524,26 @@ class PanasonicSmartHome(object):
             for gwinfo in response["GwList"]:
                 if not isinstance(gwinfo, dict):
                     continue
-                gwid = gwinfo["GwID"]
-                if "Information" not in self._devices_info.get(gwid, {}):
+                gwid = gwinfo.get("GwID")
+                device_info = self._devices_info.get(gwid, {})
+                information = device_info.get("Information") or []
+                if not information:
                     continue
-                device_type = self._devices_info[gwid]["DeviceType"]
+                device_type = device_info["DeviceType"]
+                status = information[0].setdefault("status", {})
                 if info == "Other":
                     if device_type == str(DEVICE_TYPE_FRIDGE):
-                        self._devices_info[gwid]["Information"][0]["status"][ENTITY_DOOR_OPENS] = gwinfo["Ref_OpenDoor_Total"]
+                        status[ENTITY_DOOR_OPENS] = gwinfo.get("Ref_OpenDoor_Total", 0)
                     if device_type == str(DEVICE_TYPE_WASHING_MACHINE):
-                        self._devices_info[gwid]["Information"][0]["status"][ENTITY_WASH_TIMES] = gwinfo["WM_WashTime_Total"]
-                        self._devices_info[gwid]["Information"][0]["status"][ENTITY_WATER_USED] = gwinfo["WM_WaterUsed_Total"]
+                        status[ENTITY_WASH_TIMES] = gwinfo.get("WM_WashTime_Total", 0)
+                        status[ENTITY_WATER_USED] = gwinfo.get("WM_WaterUsed_Total", 0)
                 if info == "Power":
                     if device_type == str(DEVICE_TYPE_DEHUMIDIFIER):
-                        self._devices_info[gwid]["Information"][0]["status"][ENTITY_MONTHLY_ENERGY] = float(gwinfo.get("Total_kwh", 0))
+                        status[ENTITY_MONTHLY_ENERGY] = float(gwinfo.get("Total_kwh", 0) or 0)
                     if device_type == str(DEVICE_TYPE_FRIDGE):
-                        self._devices_info[gwid]["Information"][0]["status"][ENTITY_MONTHLY_ENERGY] = float(gwinfo.get("Total_kwh", 0))
+                        status[ENTITY_MONTHLY_ENERGY] = float(gwinfo.get("Total_kwh", 0) or 0)
                     if device_type == str(DEVICE_TYPE_WASHING_MACHINE):
-                        self._devices_info[gwid]["Information"][0]["status"][ENTITY_MONTHLY_ENERGY] = float(gwinfo.get("Total_kwh", 0))
+                        status[ENTITY_MONTHLY_ENERGY] = float(gwinfo.get("Total_kwh", 0) or 0)
 
         await self._update_user_info_statistics(header)
         return True
@@ -555,8 +558,9 @@ class PanasonicSmartHome(object):
 
         if not check:
             for gwid in self._devices_info.keys():
-                if "Information" in self._devices_info[gwid]:
-                    self._devices_info[gwid]["Information"][0]["status"][ENTITY_UPDATE] = self._update_info.get(gwid, False)
+                information = self._devices_info[gwid].get("Information") or []
+                if information:
+                    information[0].setdefault("status", {})[ENTITY_UPDATE] = self._update_info.get(gwid, False)
             return False
 
         for gwid in self._devices_info.keys():

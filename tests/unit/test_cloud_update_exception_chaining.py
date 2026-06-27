@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
+from datetime import datetime
 from pathlib import Path
 
 from tests.helpers.source_parsing import load_method_function
@@ -112,3 +113,88 @@ def test_get_update_info_tolerates_short_update_info_rows() -> None:
         "update_version": "",
     }
     assert client._devices_info["gw3"]["Information"] == []
+
+
+def test_get_update_info_without_check_skips_empty_information_rows() -> None:
+    get_update_info = load_method_function(
+        CLOUD,
+        class_name="PanasonicSmartHome",
+        method_name="get_update_info",
+        globals_env={
+            "api_status": lambda func: func,
+            "ENTITY_UPDATE": "update_available",
+        },
+    )
+
+    class FakeClient:
+        _update_info = {"gw1": True, "gw2": False}
+        _devices_info = {
+            "gw1": {"Information": [{"status": {}}]},
+            "gw2": {"Information": []},
+        }
+
+    client = FakeClient()
+
+    assert asyncio.run(get_update_info(client, check=False)) is False
+    assert client._devices_info["gw1"]["Information"][0]["status"] == {
+        "update_available": True,
+    }
+    assert client._devices_info["gw2"]["Information"] == []
+
+
+def test_get_user_info_skips_empty_information_rows_and_missing_totals() -> None:
+    class FakeApis:
+        @staticmethod
+        def get_user_info() -> str:
+            return "https://example.invalid/api/UserGetInfo"
+
+    get_user_info = load_method_function(
+        CLOUD,
+        class_name="PanasonicSmartHome",
+        method_name="get_user_info",
+        globals_env={
+            "api_status": lambda func: func,
+            "apis": FakeApis,
+            "datetime": datetime,
+            "USER_INFO_TYPES": ["Power", "Other"],
+            "DEVICE_TYPE_DEHUMIDIFIER": "2",
+            "DEVICE_TYPE_FRIDGE": "3",
+            "DEVICE_TYPE_WASHING_MACHINE": "4",
+            "ENTITY_DOOR_OPENS": "door_opens",
+            "ENTITY_MONTHLY_ENERGY": "monthly_energy",
+            "ENTITY_WASH_TIMES": "wash_times",
+            "ENTITY_WATER_USED": "water_used",
+        },
+    )
+
+    class FakeClient:
+        _cp_token = "token"
+        _devices_info = {
+            "washer": {"DeviceType": "4", "Information": [{"status": {}}]},
+            "empty": {"DeviceType": "4", "Information": []},
+        }
+
+        async def request(self, **kwargs):
+            info_type = kwargs["data"]["name"]
+            if info_type == "Power":
+                return {
+                    "GwList": [
+                        {"GwID": "washer", "Total_kwh": "2.5"},
+                        {"GwID": "empty", "Total_kwh": "3.0"},
+                    ]
+                }
+            return {"GwList": [{"GwID": "washer"}, {"GwID": "empty"}]}
+
+        async def _update_user_info_statistics(self, header):
+            self.statistics_header = header
+            return True
+
+    client = FakeClient()
+
+    assert asyncio.run(get_user_info(client)) is True
+    assert client._devices_info["washer"]["Information"][0]["status"] == {
+        "monthly_energy": 2.5,
+        "wash_times": 0,
+        "water_used": 0,
+    }
+    assert client._devices_info["empty"]["Information"] == []
