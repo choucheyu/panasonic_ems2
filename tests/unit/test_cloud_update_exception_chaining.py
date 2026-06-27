@@ -219,6 +219,7 @@ def test_get_device_with_info_splits_large_payloads_and_merges_chunks() -> None:
             "apis": FakeApis,
             "asyncio": asyncio,
             "_LOGGER": logging.getLogger("test.panasonic_ems2.cloud"),
+            "DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS": cloud_commands.DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS,
             "chunk_command_type_payload": cloud_commands.chunk_command_type_payload,
             "merge_device_information_chunks": cloud_status.merge_device_information_chunks,
         },
@@ -230,6 +231,7 @@ def test_get_device_with_info_splits_large_payloads_and_merges_chunks() -> None:
 
         def __init__(self) -> None:
             self.requests = []
+            self.request_timeouts = []
 
         def _get_device_commands(self, *_args):
             return [{"CommandType": "0x00"}]
@@ -239,6 +241,7 @@ def test_get_device_with_info_splits_large_payloads_and_merges_chunks() -> None:
 
         async def request(self, **kwargs):
             self.requests.append(kwargs["data"])
+            self.request_timeouts.append(kwargs.get("timeout"))
             command_types = kwargs["data"][0]["CommandTypes"]
             return {
                 "status": "success",
@@ -269,13 +272,16 @@ def test_get_device_with_info_splits_large_payloads_and_merges_chunks() -> None:
     chunk_size = cloud_commands.DEVICE_GET_INFO_COMMAND_CHUNK_SIZE
     assert len(client.requests) > 1
     assert all(len(request[0]["CommandTypes"]) <= chunk_size for request in client.requests)
+    assert client.request_timeouts == [
+        cloud_commands.DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS
+    ] * len(client.requests)
     status = info[0]["status"]
     assert "0x00" in status
     assert all(command["CommandType"] in status for command in commands)
     assert len(status) == 25
 
 
-def test_get_device_with_info_continues_after_empty_chunk_response(caplog) -> None:
+def test_get_device_with_info_stops_after_empty_chunk_response(caplog) -> None:
     cloud_commands = _load_core_module("cloud_commands")
     cloud_status = _load_core_module("cloud_status")
 
@@ -294,6 +300,7 @@ def test_get_device_with_info_continues_after_empty_chunk_response(caplog) -> No
             "apis": FakeApis,
             "asyncio": asyncio,
             "_LOGGER": logger,
+            "DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS": cloud_commands.DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS,
             "chunk_command_type_payload": cloud_commands.chunk_command_type_payload,
             "merge_device_information_chunks": cloud_status.merge_device_information_chunks,
         },
@@ -341,11 +348,14 @@ def test_get_device_with_info_continues_after_empty_chunk_response(caplog) -> No
     }
     caplog.set_level(logging.WARNING, logger=logger.name)
 
-    info = asyncio.run(get_device_with_info(FakeClient(), device, commands))
+    client = FakeClient()
+    info = asyncio.run(get_device_with_info(client, device, commands))
 
-    assert len(info) == 1
+    assert info == []
+    assert len(client.requests) == 1
     assert "DeviceGetInfo chunk failed" in caplog.text
     assert "device_type=1" in caplog.text
     assert "model_type=MODEL" in caplog.text
     assert "command_count=" in caplog.text
     assert "commands=" in caplog.text
+    assert "remaining_chunks_skipped=True" in caplog.text

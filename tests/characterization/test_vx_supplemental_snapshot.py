@@ -125,6 +125,7 @@ def _load_cloud_method(method_name: str):
     constants["apis"] = _FakeApis
     constants["api_status"] = lambda func: func
     constants["asyncio"] = _NoSleep
+    constants["DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS"] = 5
     return constants, load_method_function(
         CLOUD_PATH,
         class_name="PanasonicSmartHome",

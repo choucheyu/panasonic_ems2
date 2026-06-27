@@ -62,6 +62,7 @@ class PanasonicApiClient:
         endpoint: str,
         params=None,
         data=None,
+        timeout: int | None = None,
     ):
         """Send one Panasonic EMS2 request and normalize its response shape."""
         res = {}
@@ -78,7 +79,7 @@ class PanasonicApiClient:
                 json=data,
                 params=params,
                 headers=headers,
-                timeout=self._request_timeout,
+                timeout=timeout if timeout is not None else self._request_timeout,
             )
         except Exception as exc:
             duration_ms = int((time.monotonic() - request_start) * 1000)

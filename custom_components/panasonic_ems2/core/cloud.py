@@ -22,26 +22,9 @@ from ..api.errors import (
     Ems2TooManyRequest
 )
 from ..api.token_store import PanasonicTokenStore
-from .capabilities import (
-    command_name_override,
-    command_range_override,
-    range_lookup_models,
-    set_command_id,
-)
-from .cloud_commands import (
-    build_light_device_command_types,
-    build_polling_command_types,
-    chunk_command_type_payload,
-    filter_supplemental_snapshot,
-    get_supplemental_keys,
-    merge_supplemental_status,
-)
-from .cloud_status import (
-    build_offline_information,
-    merge_device_information_chunks,
-    normalize_command_status,
-    refactor_device_information,
-)
+from .capabilities import command_name_override, command_range_override, range_lookup_models, set_command_id
+from .cloud_commands import DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS, build_light_device_command_types, build_polling_command_types, chunk_command_type_payload, filter_supplemental_snapshot, get_supplemental_keys, merge_supplemental_status
+from .cloud_status import build_offline_information, merge_device_information_chunks, normalize_command_status, refactor_device_information
 from .command_metadata import refactor_command_metadata
 from .statistics_builder import build_user_info_external_statistics_rows
 from .user_info_requests import build_user_info_statistics_requests
@@ -167,6 +150,7 @@ class PanasonicSmartHome(object):
         endpoint: str,
         params=None,
         data=None,
+        timeout: int | None = None,
     ):
         """Shared request wrapper preserving the PanasonicSmartHome public seam."""
         try:
@@ -176,6 +160,7 @@ class PanasonicSmartHome(object):
                 endpoint=endpoint,
                 params=params,
                 data=data,
+                timeout=timeout,
             )
         finally:
             self._api_counts = self._api_client.api_counts
@@ -321,12 +306,13 @@ class PanasonicSmartHome(object):
                     headers=header,
                     data=[{"CommandTypes": command_chunk, "DeviceID": device_id}],
                     endpoint=apis.post_device_get_info(),
+                    timeout=DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS,
                 )
                 if response.get("status", "") == "success":
                     raw_devices.extend(response.get("devices", []))
                     continue
                 _LOGGER.warning(
-                    "Panasonic EMS2 DeviceGetInfo chunk failed device_type=%s model_type=%s device_index=%s chunk_index=%s chunk_count=%s command_count=%s commands=%s",
+                    "Panasonic EMS2 DeviceGetInfo chunk failed device_type=%s model_type=%s device_index=%s chunk_index=%s chunk_count=%s command_count=%s commands=%s remaining_chunks_skipped=%s",
                     device.get("DeviceType"),
                     device.get("ModelType"),
                     dev_idx,
@@ -334,7 +320,10 @@ class PanasonicSmartHome(object):
                     len(chunks),
                     len(command_chunk),
                     [item.get("CommandType") for item in command_chunk],
+                    not bool(response),
                 )
+                if not response:
+                    break
                 await asyncio.sleep(.05)
 
         info = self._refactor_info(
@@ -359,7 +348,13 @@ class PanasonicSmartHome(object):
             return {}
         header = {"CPToken": self._cp_token, "auth": device.get("Auth", ""), "GWID": gwid}
         data = [{"DeviceID": device_id, "CommandTypes": [{"CommandType": k} for k in keys]}]
-        response = await self.request(method="POST", headers=header, data=data, endpoint=apis.post_device_get_info())
+        response = await self.request(
+            method="POST",
+            headers=header,
+            data=data,
+            endpoint=apis.post_device_get_info(),
+            timeout=DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS,
+        )
         snapshot = {}
         if response.get("status", "") != "success":
             return snapshot

@@ -224,6 +224,44 @@ def test_api_client_request_returns_empty_dict_on_transport_error() -> None:
     assert client.api_counts_per_hour == 1
 
 
+def test_api_client_request_accepts_per_call_timeout_override() -> None:
+    PanasonicApiClient = _load_api_module("client").PanasonicApiClient
+
+    session = _Session(_Response(HTTPStatus.OK, {"ok": True}))
+    client = PanasonicApiClient(
+        session=session,
+        account="user@example.com",
+        request_timeout=15,
+    )
+
+    assert (
+        asyncio.run(
+            client.request(
+                "POST",
+                headers={},
+                endpoint="https://example.invalid/api/DeviceGetInfo",
+                timeout=5,
+            )
+        )
+        == {"ok": True}
+    )
+    assert session.calls[0]["timeout"] == 5
+
+
+def test_api_client_request_uses_default_timeout_without_override() -> None:
+    PanasonicApiClient = _load_api_module("client").PanasonicApiClient
+
+    session = _Session(_Response(HTTPStatus.OK, {"ok": True}))
+    client = PanasonicApiClient(
+        session=session,
+        account="user@example.com",
+        request_timeout=15,
+    )
+
+    assert asyncio.run(client.request("GET", headers={}, endpoint="https://example.invalid/api")) == {"ok": True}
+    assert session.calls[0]["timeout"] == 15
+
+
 def test_api_client_transport_error_log_redacts_account_and_adds_diagnostics(caplog) -> None:
     PanasonicApiClient = _load_api_module("client").PanasonicApiClient
 
