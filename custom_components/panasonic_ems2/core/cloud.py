@@ -109,8 +109,17 @@ def api_status(func):
         except (
             Exception,
         ) as e:
-            _LOGGER.warning(f"Got exception {e}")
-            #return {}
+            func_name = getattr(func, "__name__", "<unknown>")
+            _LOGGER.warning(
+                "Panasonic EMS2 cloud call failed func=%s exception=%s",
+                func_name,
+                e.__class__.__name__,
+            )
+            _LOGGER.debug(
+                "Panasonic EMS2 cloud call traceback func=%s",
+                func_name,
+                exc_info=True,
+            )
             return args[0]._devices_info
     return wrapper_call
 
@@ -553,8 +562,9 @@ class PanasonicSmartHome(object):
         for gwid in self._devices_info.keys():
             if len(self._update_info) < 1:
                 self._update_info[gwid] = False
-            if "Information" in self._devices_info[gwid]:
-                self._devices_info[gwid]["Information"][0]["status"][ENTITY_UPDATE] = False
+            information = self._devices_info[gwid].get("Information") or []
+            if information:
+                information[0].setdefault("status", {})[ENTITY_UPDATE] = False
 
         header = {"CPToken": self._cp_token, "apptype": "Smart"}
         response = await self.request(
@@ -562,15 +572,26 @@ class PanasonicSmartHome(object):
         )
 
         if "GwList" in response:
+            raw_update_infos = response.get("UpdateInfo", [])
+            update_infos = raw_update_infos if isinstance(raw_update_infos, list) else []
             idx = 0
             for gwinfo in response["GwList"]:
                 gwid = gwinfo.get("GwID", None)
-                if gwid and "Information" not in self._devices_info[gwid]:
+                if not gwid:
+                    continue
+                device_info = self._devices_info.get(gwid, {})
+                information = device_info.get("Information") or []
+                if not information:
                     continue
 
+                update_info = {}
+                if idx < len(update_infos) and isinstance(update_infos[idx], dict):
+                    update_info = update_infos[idx]
+
                 self._update_info[gwid] = True
-                self._devices_info[gwid]["Information"][0]["status"][ENTITY_UPDATE] = True
-                self._devices_info[gwid]["Information"][0]["status"][ENTITY_UPDATE_INFO] = response["UpdateInfo"][idx].get("updateVersion", "")
+                status = information[0].setdefault("status", {})
+                status[ENTITY_UPDATE] = True
+                status[ENTITY_UPDATE_INFO] = update_info.get("updateVersion", "")
                 idx = idx + 1
         return True
 
