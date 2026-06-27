@@ -139,6 +139,14 @@ Supplemental probing is opt-in because it increases read-only API calls:
 python panasonic_ems2.py --probe-supplemental
 ```
 
+## Buy Me A Coffee
+
+If this Taiwan-focused fork helps your Home Assistant setup, you can support ongoing maintenance by scanning the QR code below.
+
+<p align="center">
+  <img src="assets/buy-me-a-coffee-qr.jpg" alt="Buy Me A Coffee QR code" width="220">
+</p>
+
 ## Attribution
 
 This project is based on:

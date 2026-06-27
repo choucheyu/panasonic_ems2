@@ -139,6 +139,14 @@ python panasonic_ems2.py --raw-output
 python panasonic_ems2.py --probe-supplemental
 ```
 
+## 支持開發 / Buy Me A Coffee
+
+如果這個台灣使用情境維護版對你的 Home Assistant 有幫助，可以掃描下方 QR code 支持後續維護。
+
+<p align="center">
+  <img src="assets/buy-me-a-coffee-qr.jpg" alt="Buy Me A Coffee QR code" width="220">
+</p>
+
 ## 來源標示
 
 本專案基於：
