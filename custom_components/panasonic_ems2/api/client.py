@@ -26,9 +26,14 @@ def _redact_account(_account: str) -> str:
     return "<redacted>"
 
 
-def _safe_endpoint_label(endpoint: str) -> str:
+def _safe_endpoint_label(endpoint: Any) -> str:
     """Return a log-safe endpoint label without query parameters or secrets."""
-    path = urlsplit(endpoint).path
+    if not isinstance(endpoint, str):
+        return "<invalid-endpoint>"
+    try:
+        path = urlsplit(endpoint).path
+    except ValueError:
+        return "<invalid-endpoint>"
     return path or "/"
 
 

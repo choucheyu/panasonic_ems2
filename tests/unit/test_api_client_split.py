@@ -247,11 +247,28 @@ def test_api_client_transport_error_log_redacts_account_and_adds_diagnostics(cap
     assert "sensitive.user" not in caplog.text
     assert "timeout while fetching" not in caplog.text
     assert "secret=not-logged" not in caplog.text
+    assert "example.invalid" not in caplog.text
+    assert "https://example.invalid" not in caplog.text
     assert "account=<redacted>" in caplog.text
     assert "method=POST" in caplog.text
     assert "endpoint=/api/DeviceGetInfo" in caplog.text
     assert "exception=TimeoutError" in caplog.text
     assert "duration_ms=" in caplog.text
+
+
+def test_api_client_transport_error_log_handles_unexpected_endpoint_safely(caplog) -> None:
+    PanasonicApiClient = _load_api_module("client").PanasonicApiClient
+
+    session = _Session(raises=TimeoutError("timeout while handling bad endpoint"))
+    client = PanasonicApiClient(session=session, account="user@example.com")
+    caplog.set_level(logging.WARNING)
+
+    assert asyncio.run(client.request("GET", headers={}, endpoint=None)) == {}
+
+    assert "timeout while handling bad endpoint" not in caplog.text
+    assert "user@example.com" not in caplog.text
+    assert "endpoint=<invalid-endpoint>" in caplog.text
+    assert "exception=TimeoutError" in caplog.text
 
 
 def test_cloud_uses_api_client_and_token_store_seams_instead_of_owning_http_logic() -> None:
