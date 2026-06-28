@@ -1,5 +1,6 @@
 {
   "name": "Panasonic Smart IoT TW",
   "homeassistant": "2023.11.0",
-  "render_readme": true
+  "render_readme": true,
+  "country": "TW"
 }

@@ -38,6 +38,7 @@ def test_hacs_metadata_matches_taiwan_fork() -> None:
         "name": "Panasonic Smart IoT TW",
         "homeassistant": "2023.11.0",
         "render_readme": True,
+        "country": "TW",
     }
 
 
