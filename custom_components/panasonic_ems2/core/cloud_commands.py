@@ -9,7 +9,12 @@ from __future__ import annotations
 from typing import Any, Mapping, Sequence
 
 from .capabilities import commands_for_model, supplemental_commands_for_model
-from .constants.common import DEVICE_TYPE_FRIDGE, DEVICE_TYPE_LIGHT
+from .constants.common import (
+    DEVICE_TYPE_DRYER,
+    DEVICE_TYPE_FRIDGE,
+    DEVICE_TYPE_LIGHT,
+    DEVICE_TYPE_WASHING_MACHINE,
+)
 from .constants.fridge import FRIDGE_XGS_COMMANDS
 from .constants.light import (
     LIGHT_CHANNEL_1_TIMER_OFF,
@@ -56,6 +61,49 @@ def _command_type_payload(commands: Sequence[str]) -> list[dict[str, str]]:
     return [{"CommandType": command} for command in commands]
 
 
+def remote_command_types_for_model(
+    command_metadata: Mapping[str, Sequence[Mapping[str, Any]]],
+    device_type: str | int,
+    model_type: str,
+) -> list[str] | None:
+    """Return cloud-declared CommandList keys for one model/device type.
+
+    ``None`` means Panasonic did not provide metadata for this model/type.
+    An empty list means metadata exists but declares no commands, which callers
+    must not confuse with a broad local capability fallback.
+    """
+    groups = command_metadata.get(model_type)
+    if groups is None:
+        return None
+    for group in groups:
+        if str(group.get("DeviceType")) != str(device_type):
+            continue
+        declared = group.get("CommandTypes")
+        if declared is not None:
+            return [str(command) for command in declared]
+        parameters = group.get("CommandParameters", {})
+        return [str(command) for command in parameters]
+    return None
+
+
+def no_remote_command_types_for_model(
+    no_remote_command_types: Mapping[str, Mapping[str, Sequence[str]]],
+    device_type: str | int,
+    model_type: str,
+) -> list[str] | None:
+    """Return known-safe local command keys when Panasonic omits CommandList."""
+    commands = no_remote_command_types.get(str(device_type), {}).get(model_type)
+    if commands is None:
+        return None
+    return [str(command) for command in commands]
+
+
+DECLARED_COMMAND_POLLING_DEVICE_TYPES = (
+    DEVICE_TYPE_WASHING_MACHINE,
+    DEVICE_TYPE_DRYER,
+)
+
+
 def get_supplemental_keys(device: dict[str, Any], *, capability_registry: Mapping[str, Any]) -> list[str]:
     """Return isolated supplemental command keys for this device/model."""
     device_type = str(device.get("DeviceType", ""))
@@ -74,10 +122,27 @@ def build_polling_command_types(
     model_type: str,
     *,
     has_remote_commands: bool,
+    remote_command_types: Sequence[str] | None = None,
+    no_remote_command_types: Sequence[str] | None = None,
+    declared_command_device_types: Sequence[str | int] = DECLARED_COMMAND_POLLING_DEVICE_TYPES,
     capability_registry: Mapping[str, Any],
     model_jp_types: Sequence[str],
 ) -> list[dict[str, str]]:
     """Return DeviceGetInfo command payloads for one device/model."""
+    if remote_command_types is not None and str(device_type) in {
+        str(allowed_type) for allowed_type in declared_command_device_types
+    }:
+        if remote_command_types:
+            return _command_type_payload(remote_command_types)
+        if no_remote_command_types:
+            return _command_type_payload(no_remote_command_types)
+        return list(DEFAULT_POWER_COMMAND_TYPES)
+
+    if no_remote_command_types and str(device_type) in {
+        str(allowed_type) for allowed_type in declared_command_device_types
+    }:
+        return _command_type_payload(no_remote_command_types)
+
     if not has_remote_commands:
         return list(DEFAULT_POWER_COMMAND_TYPES)
 

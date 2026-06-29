@@ -23,6 +23,7 @@ from .core.const import (
     WASHING_MACHINE_RESERVATION_CLOCK_TIME_KEYS,
     WASHING_MACHINE_RESERVATION_OPERATING_STATUS_VALUES,
     WASHING_MACHINE_SENSORS,
+    WASHING_MACHINE_SENSORS_BY_MODEL,
     WEIGHT_PLATE_SENSORS,
     PanasonicSensorDescription
 )
@@ -58,6 +59,11 @@ async def async_setup_entry(hass, entry, async_add_entities) -> bool:
 
             if device_type == DEVICE_TYPE_WASHING_MACHINE:
                 for description in WASHING_MACHINE_SENSORS:
+                        entities.extend(
+                            [PanasonicSensor(
+                                coordinator, device_gwid, 1, client, info, description)]
+                        )
+                for description in WASHING_MACHINE_SENSORS_BY_MODEL.get(info.get("ModelType", ""), ()):
                         entities.extend(
                             [PanasonicSensor(
                                 coordinator, device_gwid, 1, client, info, description)]

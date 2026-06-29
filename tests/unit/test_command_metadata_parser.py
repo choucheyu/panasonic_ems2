@@ -99,3 +99,13 @@ def test_washer_metadata_parser_aliases_0x15_timer_to_remaining_time_key() -> No
     }
     assert hdh["CommandName"][timer_remaining] == "預約殘時間"
     assert hdh["CommandParameters"]["0x15"] == hdh["CommandParameters"][timer_remaining]
+
+
+def test_command_metadata_parser_preserves_declared_command_type_order() -> None:
+    constants, parsed = _parse_fixture()
+    hdh = parsed["HDH"][0]
+
+    assert hdh["CommandTypes"] == [
+        constants["WASHING_MACHINE_OPERATING_STATUS"],
+        "0x15",
+    ]

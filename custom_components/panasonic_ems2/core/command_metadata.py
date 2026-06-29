@@ -76,9 +76,11 @@ def refactor_command_metadata(
 
             command_parameters: dict[str, dict[str, Any]] = {}
             command_names: dict[str, str] = {}
+            command_types: list[str] = []
 
             for command in command_group["list"]:
                 command_type = _normalize_command_type(command["CommandType"])
+                command_types.append(command_type)
                 parameter_type = command.get("ParameterType", "")
                 parameters_list = command.get("Parameters", [])
 
@@ -103,6 +105,7 @@ def refactor_command_metadata(
                 key: value for key, value in command_group.items() if key != "list"
             }
             normalized_group["DeviceType"] = str(normalized_group["DeviceType"])
+            normalized_group["CommandTypes"] = command_types
             normalized_group["CommandParameters"] = command_parameters
             normalized_group["CommandName"] = command_names
             normalized_groups.append(normalized_group)

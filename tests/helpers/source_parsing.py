@@ -246,6 +246,8 @@ def add_capability_runtime_globals(env: dict[str, Any]) -> dict[str, Any]:
             ),
             "get_supplemental_keys": cloud_commands.get_supplemental_keys,
             "merge_supplemental_status": cloud_commands.merge_supplemental_status,
+            "remote_command_types_for_model": cloud_commands.remote_command_types_for_model,
+            "no_remote_command_types_for_model": cloud_commands.no_remote_command_types_for_model,
             "normalize_command_status": cloud_status.normalize_command_status,
             "refactor_device_information": cloud_status.refactor_device_information,
         }

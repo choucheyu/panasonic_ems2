@@ -32,6 +32,10 @@ from ..constants.washing_machine import (
     WASHING_MACHINE_TIMER,
     WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
     WASHING_MACHINE_ERROR_CODE,
+    WASHING_MACHINE_ERROR_STATUS,
+    WASHING_MACHINE_PROGRAM_1,
+    WASHING_MACHINE_LX128_REMAINING_WASH_TIME,
+    WASHING_MACHINE_NANOE_REMAINING_TIME,
     WASHING_MACHINE_ENERGY,
     WASHING_MACHINE_OPERATING_STATUS,
     WASHING_MACHINE_51,
@@ -44,6 +48,8 @@ from ..constants.washing_machine import (
     WASHING_MACHINE_TIMER_REMAINING_TIME,
     WASHING_MACHINE_59,
     WASHING_MACHINE_60,
+    WASHING_MACHINE_DRYING_TIME,
+    WASHING_MACHINE_DRYING_METHOD,
     WASHING_MACHINE_61,
     WASHING_MACHINE_POSTPONE_DRYING_TIME,
     WASHING_MACHINE_PROGRESS_NEW,
@@ -138,6 +144,67 @@ WASHING_MACHINE_SELECTS_BY_MODEL = {
 }
 
 WASHING_MACHINE_SELECTS: tuple[PanasonicSelectDescription, ...] = ()
+
+WASHING_MACHINE_DSH_SENSORS: tuple[PanasonicSensorDescription, ...] = (
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_OPERATING_STATUS_OLD,
+        name="工程訊息",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:progress-helper"
+    ),
+)
+
+WASHING_MACHINE_RPH_SENSORS: tuple[PanasonicSensorDescription, ...] = (
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_DRYING_TIME,
+        name="乾燥時間設定",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:tumble-dryer"
+    ),
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_DRYING_METHOD,
+        name="乾燥方法設定",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:tumble-dryer"
+    ),
+)
+
+WASHING_MACHINE_CN_RW_SENSORS: tuple[PanasonicSensorDescription, ...] = (
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_PROGRAM_1,
+        name="工程資訊",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:progress-helper"
+    ),
+)
+
+WASHING_MACHINE_LX128_SENSORS: tuple[PanasonicSensorDescription, ...] = (
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_LX128_REMAINING_WASH_TIME,
+        name="洗衣殘時間",
+        icon="mdi:clock"
+    ),
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_NANOE_REMAINING_TIME,
+        name="nanoe殘時間",
+        icon="mdi:atom-variant"
+    ),
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_ERROR_STATUS,
+        name="異常狀態",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:alert-circle"
+    ),
+)
+
+WASHING_MACHINE_SENSORS_BY_MODEL = {
+    "DSH": WASHING_MACHINE_DSH_SENSORS,
+    "RPH": WASHING_MACHINE_RPH_SENSORS,
+    "CN-RW": WASHING_MACHINE_CN_RW_SENSORS,
+    "LX128E": WASHING_MACHINE_LX128_SENSORS,
+    "LX128F": WASHING_MACHINE_LX128_SENSORS,
+    "LX128G": WASHING_MACHINE_LX128_SENSORS,
+}
 
 WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
