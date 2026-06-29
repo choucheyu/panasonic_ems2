@@ -21,6 +21,8 @@ ROOT = Path(__file__).resolve().parents[2]
 CORE = ROOT / "custom_components" / "panasonic_ems2" / "core"
 CONST_PATH = CORE / "const.py"
 CLOUD_PATH = CORE / "cloud.py"
+SENSOR_PLATFORM_PATH = ROOT / "custom_components" / "panasonic_ems2" / "sensor.py"
+WASHER_DESCRIPTIONS_PATH = CORE / "entity_descriptions" / "washing_machine.py"
 
 
 def _runtime_env() -> dict[str, Any]:
@@ -29,6 +31,12 @@ def _runtime_env() -> dict[str, Any]:
 
 def _command_type_values(payload: list[dict[str, str]]) -> list[str]:
     return [item["CommandType"] for item in payload]
+
+
+def _source_contains(path: Path, *needles: str) -> None:
+    source = path.read_text(encoding="utf-8")
+    for needle in needles:
+        assert needle in source
 
 
 def test_declared_commandlist_polling_is_scoped_to_washer_and_dryer() -> None:
@@ -150,3 +158,18 @@ def test_cloud_get_commands_uses_declared_policy_without_shrinking_climate() -> 
     assert env["CLIMATE_TEMPERATURE_INDOOR"] in climate_commands
     assert env["CLIMATE_AIRFRESH_MODE"] in climate_commands
     assert env["CLIMATE_SWING_VERTICAL_LEVEL"] in climate_commands
+
+
+def test_dsh_washer_has_model_specific_current_progress_sensor() -> None:
+    _source_contains(
+        WASHER_DESCRIPTIONS_PATH,
+        "WASHING_MACHINE_DSH_SENSORS",
+        "WASHING_MACHINE_SENSORS_BY_MODEL",
+        "WASHING_MACHINE_CURRENT_PROGRESS",
+        "工程訊息",
+    )
+    _source_contains(
+        SENSOR_PLATFORM_PATH,
+        "WASHING_MACHINE_SENSORS_BY_MODEL",
+        "info.get(\"ModelType\", \"\")",
+    )

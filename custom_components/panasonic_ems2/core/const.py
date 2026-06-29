@@ -335,6 +335,7 @@ from .entity_descriptions.washing_machine import (
     WASHING_MACHINE_SELECTS_BY_MODEL,
     WASHING_MACHINE_SELECTS,
     WASHING_MACHINE_SENSORS,
+    WASHING_MACHINE_SENSORS_BY_MODEL,
     WASHING_MACHINE_SWITCHES,
 )
 from .entity_descriptions.weight_plate import (

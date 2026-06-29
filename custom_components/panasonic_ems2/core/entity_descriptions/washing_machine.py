@@ -139,6 +139,19 @@ WASHING_MACHINE_SELECTS_BY_MODEL = {
 
 WASHING_MACHINE_SELECTS: tuple[PanasonicSelectDescription, ...] = ()
 
+WASHING_MACHINE_DSH_SENSORS: tuple[PanasonicSensorDescription, ...] = (
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_OPERATING_STATUS_OLD,
+        name="工程訊息",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:progress-helper"
+    ),
+)
+
+WASHING_MACHINE_SENSORS_BY_MODEL = {
+    "DSH": WASHING_MACHINE_DSH_SENSORS,
+}
+
 WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     PanasonicSensorDescription(
         key=WASHING_MACHINE_REMAING_WASH_TIME,
