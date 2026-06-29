@@ -86,6 +86,18 @@ def remote_command_types_for_model(
     return None
 
 
+def no_remote_command_types_for_model(
+    no_remote_command_types: Mapping[str, Mapping[str, Sequence[str]]],
+    device_type: str | int,
+    model_type: str,
+) -> list[str] | None:
+    """Return known-safe local command keys when Panasonic omits CommandList."""
+    commands = no_remote_command_types.get(str(device_type), {}).get(model_type)
+    if commands is None:
+        return None
+    return [str(command) for command in commands]
+
+
 DECLARED_COMMAND_POLLING_DEVICE_TYPES = (
     DEVICE_TYPE_WASHING_MACHINE,
     DEVICE_TYPE_DRYER,
@@ -111,6 +123,7 @@ def build_polling_command_types(
     *,
     has_remote_commands: bool,
     remote_command_types: Sequence[str] | None = None,
+    no_remote_command_types: Sequence[str] | None = None,
     declared_command_device_types: Sequence[str | int] = DECLARED_COMMAND_POLLING_DEVICE_TYPES,
     capability_registry: Mapping[str, Any],
     model_jp_types: Sequence[str],
@@ -121,7 +134,14 @@ def build_polling_command_types(
     }:
         if remote_command_types:
             return _command_type_payload(remote_command_types)
+        if no_remote_command_types:
+            return _command_type_payload(no_remote_command_types)
         return list(DEFAULT_POWER_COMMAND_TYPES)
+
+    if no_remote_command_types and str(device_type) in {
+        str(allowed_type) for allowed_type in declared_command_device_types
+    }:
+        return _command_type_payload(no_remote_command_types)
 
     if not has_remote_commands:
         return list(DEFAULT_POWER_COMMAND_TYPES)

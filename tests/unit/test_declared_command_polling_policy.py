@@ -211,3 +211,60 @@ def test_cn_stack_exposes_program_status_sensors() -> None:
         "DRYER_PROGRAM_2",
         "工程資訊",
     )
+
+
+def test_lx128_uses_model_scoped_no_remote_fallback_without_start_or_warm_water() -> None:
+    env = _runtime_env()
+    expected_commands = [
+        env["WASHING_MACHINE_CURRENT_PROGRESS"],
+        env["WASHING_MACHINE_OPERATING_STATUS"],
+        env["WASHING_MACHINE_CURRENT_MODE"],
+        env["WASHING_MACHINE_LX128_REMAINING_WASH_TIME"],
+        env["WASHING_MACHINE_NANOE_REMAINING_TIME"],
+        env["WASHING_MACHINE_TIMER_REMAINING_TIME_OLD"],
+        env["WASHING_MACHINE_ERROR_STATUS"],
+        env["WASHING_MACHINE_TIMER"],
+        env["WASHING_MACHINE_60"],
+        env["WASHING_MACHINE_POSTPONE_DRYING_TIME"],
+        env["WASHING_MACHINE_PROGRESS_NEW"],
+    ]
+
+    fallback = env["no_remote_command_types_for_model"](
+        env["NO_REMOTE_COMMAND_TYPES"],
+        env["DEVICE_TYPE_WASHING_MACHINE"],
+        "LX128E",
+    )
+    empty_commandlist_payload = env["build_polling_command_types"](
+        env["DEVICE_TYPE_WASHING_MACHINE"],
+        "LX128E",
+        has_remote_commands=True,
+        remote_command_types=[],
+        no_remote_command_types=fallback,
+        capability_registry=env["CAPABILITY_REGISTRY"],
+        model_jp_types=env["MODEL_JP_TYPES"],
+    )
+    missing_metadata_payload = env["build_polling_command_types"](
+        env["DEVICE_TYPE_WASHING_MACHINE"],
+        "LX128E",
+        has_remote_commands=True,
+        remote_command_types=None,
+        no_remote_command_types=fallback,
+        capability_registry=env["CAPABILITY_REGISTRY"],
+        model_jp_types=env["MODEL_JP_TYPES"],
+    )
+
+    assert _command_type_values(empty_commandlist_payload) == expected_commands
+    assert _command_type_values(missing_metadata_payload) == expected_commands
+    assert env["WASHING_MACHINE_ENABLE"] not in expected_commands
+    assert env["WASHING_MACHINE_WARM_WATER"] not in expected_commands
+    _source_contains(
+        WASHER_DESCRIPTIONS_PATH,
+        "WASHING_MACHINE_LX128_SENSORS",
+        "WASHING_MACHINE_LX128_REMAINING_WASH_TIME",
+        "洗衣殘時間",
+        "WASHING_MACHINE_NANOE_REMAINING_TIME",
+        "nanoe殘時間",
+        "WASHING_MACHINE_ERROR_STATUS",
+        "異常狀態",
+        '"LX128E": WASHING_MACHINE_LX128_SENSORS',
+    )
