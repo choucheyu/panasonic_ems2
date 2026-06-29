@@ -23,6 +23,7 @@ CONST_PATH = CORE / "const.py"
 CLOUD_PATH = CORE / "cloud.py"
 SENSOR_PLATFORM_PATH = ROOT / "custom_components" / "panasonic_ems2" / "sensor.py"
 WASHER_DESCRIPTIONS_PATH = CORE / "entity_descriptions" / "washing_machine.py"
+DRYER_DESCRIPTIONS_PATH = CORE / "entity_descriptions" / "dryer.py"
 
 
 def _runtime_env() -> dict[str, Any]:
@@ -188,4 +189,25 @@ def test_rph_washer_exposes_dryer_status_sensors() -> None:
         "WASHING_MACHINE_DRYING_METHOD",
         "乾燥方法設定",
         '"RPH": WASHING_MACHINE_RPH_SENSORS',
+    )
+
+
+def test_cn_stack_exposes_program_status_sensors() -> None:
+    env = _runtime_env()
+
+    assert env["WASHING_MACHINE_PROGRAM_1"] == "0x34"
+    assert env["DRYER_PROGRAM_1"] == "0x34"
+    assert env["DRYER_PROGRAM_2"] == "0x64"
+    _source_contains(
+        WASHER_DESCRIPTIONS_PATH,
+        "WASHING_MACHINE_CN_RW_SENSORS",
+        "WASHING_MACHINE_PROGRAM_1",
+        "工程資訊",
+        '"CN-RW": WASHING_MACHINE_CN_RW_SENSORS',
+    )
+    _source_contains(
+        DRYER_DESCRIPTIONS_PATH,
+        "DRYER_PROGRAM_1",
+        "DRYER_PROGRAM_2",
+        "工程資訊",
     )

@@ -32,6 +32,8 @@ from ..constants.washing_machine import (
     WASHING_MACHINE_TIMER,
     WASHING_MACHINE_TIMER_REMAINING_TIME_OLD,
     WASHING_MACHINE_ERROR_CODE,
+    WASHING_MACHINE_ERROR_STATUS,
+    WASHING_MACHINE_PROGRAM_1,
     WASHING_MACHINE_ENERGY,
     WASHING_MACHINE_OPERATING_STATUS,
     WASHING_MACHINE_51,
@@ -165,9 +167,19 @@ WASHING_MACHINE_RPH_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
 )
 
+WASHING_MACHINE_CN_RW_SENSORS: tuple[PanasonicSensorDescription, ...] = (
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_PROGRAM_1,
+        name="工程資訊",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:progress-helper"
+    ),
+)
+
 WASHING_MACHINE_SENSORS_BY_MODEL = {
     "DSH": WASHING_MACHINE_DSH_SENSORS,
     "RPH": WASHING_MACHINE_RPH_SENSORS,
+    "CN-RW": WASHING_MACHINE_CN_RW_SENSORS,
 }
 
 WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (

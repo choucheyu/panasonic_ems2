@@ -141,5 +141,17 @@ DRYER_SENSORS: tuple[PanasonicSensorDescription, ...] = (
         key=DRYER_ERROR_CODE,
         name="錯誤代碼",
         icon="mdi:alert-circle"
+    ),
+    PanasonicSensorDescription(
+        key=DRYER_PROGRAM_1,
+        name="工程資訊",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:progress-helper"
+    ),
+    PanasonicSensorDescription(
+        key=DRYER_PROGRAM_2,
+        name="工程資訊",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:progress-helper"
     )
 )
