@@ -32,6 +32,7 @@ from .core.const import (
     CLIMATE_TEMPERATURE_INDOOR,
     CLIMATE_TEMPERATURE_STEP,
     CLIMATE_PRESET_MODE,
+    CLIMATE_RANGE_FAMILY,
     ERV_POWER,
     ERV_FAN_SPEED,
     ERV_OPERATING_MODE,
@@ -56,6 +57,21 @@ def get_key_from_dict(dictionary, value):
         if value == val:
             return key
     return None
+
+def _fallback_climate_hvac_modes(model_type: str) -> list:
+    """Return conservative climate modes when API command ranges are absent."""
+    if CLIMATE_RANGE_FAMILY.get(str(model_type), {}).get(CLIMATE_OPERATING_MODE):
+        return list(CLIMATE_AVAILABLE_MODES.keys())
+
+    return [mode for mode in CLIMATE_AVAILABLE_MODES if mode != HVACMode.HEAT]
+
+def _fallback_climate_fan_modes() -> list:
+    """Return common climate fan modes when API command ranges are absent."""
+    return [
+        mode
+        for mode, value in CLIMATE_AVAILABLE_FAN_MODES.items()
+        if value <= 5
+    ]
 
 async def async_setup_entry(hass, entry, async_add_entities) -> bool:
     client = hass.data[DOMAIN][entry.entry_id][DATA_CLIENT]
@@ -167,6 +183,12 @@ class PanasonicClimate(PanasonicBaseEntity, ClimateEntity):
             rng = self.client.get_range(self.device_gwid, CLIMATE_OPERATING_MODE)
             available_modes = CLIMATE_AVAILABLE_MODES
 
+        if not rng and self._device_type == DEVICE_TYPE_CLIMATE:
+            hvac_modes.extend(
+                _fallback_climate_hvac_modes(self.info.get("ModelType", ""))
+            )
+            return hvac_modes
+
         for mode, value in available_modes.items():
             if value >= 0:
                 for _, value2 in rng.items():
@@ -276,7 +298,9 @@ class PanasonicClimate(PanasonicBaseEntity, ClimateEntity):
             available_fan_modes = CLIMATE_AVAILABLE_FAN_MODES
 
         rng = self.client.get_range(self.device_gwid, fan_mode)
-        if "Max" in rng:
+        if not rng and self._device_type == DEVICE_TYPE_CLIMATE:
+            modes = _fallback_climate_fan_modes()
+        elif "Max" in rng:
             max = rng.get("Max", 1)
 
             for mode, value in available_fan_modes.items():
