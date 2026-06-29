@@ -23,7 +23,7 @@ from ..api.errors import (
 )
 from ..api.token_store import PanasonicTokenStore
 from .capabilities import command_name_override, command_range_override, range_lookup_models, set_command_id
-from .cloud_commands import DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS, build_light_device_command_types, build_polling_command_types, chunk_command_type_payload, filter_supplemental_snapshot, get_supplemental_keys, merge_supplemental_status
+from .cloud_commands import DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS, build_light_device_command_types, build_polling_command_types, chunk_command_type_payload, filter_supplemental_snapshot, get_supplemental_keys, merge_supplemental_status, remote_command_types_for_model
 from .cloud_status import build_offline_information, merge_device_information_chunks, normalize_command_status, refactor_device_information
 from .command_metadata import refactor_command_metadata
 from .statistics_builder import build_user_info_external_statistics_rows
@@ -372,13 +372,13 @@ class PanasonicSmartHome(object):
         return merge_supplemental_status(info_list, supplemental_by_device_id)
 
     def _get_commands(self, device_type, model_type, model):
-        """
-        get commands (saa: service code)
-        """
         return build_polling_command_types(
             device_type,
             model_type,
             has_remote_commands=bool(self._commands),
+            remote_command_types=remote_command_types_for_model(
+                self._commands_info, device_type, model_type
+            ),
             capability_registry=CAPABILITY_REGISTRY,
             model_jp_types=MODEL_JP_TYPES,
         )
