@@ -173,3 +173,19 @@ def test_dsh_washer_has_model_specific_current_progress_sensor() -> None:
         "WASHING_MACHINE_SENSORS_BY_MODEL",
         "info.get(\"ModelType\", \"\")",
     )
+
+
+def test_rph_washer_exposes_dryer_status_sensors() -> None:
+    env = _runtime_env()
+
+    assert env["WASHING_MACHINE_DRYING_TIME"] == "0x49"
+    assert env["WASHING_MACHINE_DRYING_METHOD"] == "0x4C"
+    _source_contains(
+        WASHER_DESCRIPTIONS_PATH,
+        "WASHING_MACHINE_RPH_SENSORS",
+        "WASHING_MACHINE_DRYING_TIME",
+        "乾燥時間設定",
+        "WASHING_MACHINE_DRYING_METHOD",
+        "乾燥方法設定",
+        '"RPH": WASHING_MACHINE_RPH_SENSORS',
+    )

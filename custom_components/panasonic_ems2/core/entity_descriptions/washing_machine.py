@@ -44,6 +44,8 @@ from ..constants.washing_machine import (
     WASHING_MACHINE_TIMER_REMAINING_TIME,
     WASHING_MACHINE_59,
     WASHING_MACHINE_60,
+    WASHING_MACHINE_DRYING_TIME,
+    WASHING_MACHINE_DRYING_METHOD,
     WASHING_MACHINE_61,
     WASHING_MACHINE_POSTPONE_DRYING_TIME,
     WASHING_MACHINE_PROGRESS_NEW,
@@ -148,8 +150,24 @@ WASHING_MACHINE_DSH_SENSORS: tuple[PanasonicSensorDescription, ...] = (
     ),
 )
 
+WASHING_MACHINE_RPH_SENSORS: tuple[PanasonicSensorDescription, ...] = (
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_DRYING_TIME,
+        name="乾燥時間設定",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:tumble-dryer"
+    ),
+    PanasonicSensorDescription(
+        key=WASHING_MACHINE_DRYING_METHOD,
+        name="乾燥方法設定",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:tumble-dryer"
+    ),
+)
+
 WASHING_MACHINE_SENSORS_BY_MODEL = {
     "DSH": WASHING_MACHINE_DSH_SENSORS,
+    "RPH": WASHING_MACHINE_RPH_SENSORS,
 }
 
 WASHING_MACHINE_SENSORS: tuple[PanasonicSensorDescription, ...] = (
