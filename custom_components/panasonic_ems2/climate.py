@@ -11,11 +11,6 @@ from homeassistant.const import (
 from homeassistant.components.climate.const import (
     HVACMode,
     PRESET_NONE,
-    SWING_ON,
-    SWING_OFF,
-    SWING_BOTH,
-    SWING_VERTICAL,
-    SWING_HORIZONTAL
 )
 
 from .core.base import PanasonicBaseEntity
@@ -33,13 +28,10 @@ from .core.const import (
     CLIMATE_POWER,
     CLIMATE_MAXIMUM_TEMPERATURE,
     CLIMATE_MINIMUM_TEMPERATURE,
-    CLIMATE_SWING_VERTICAL_LEVEL,
-    CLIMATE_SWING_HORIZONTAL_LEVEL,
     CLIMATE_TARGET_TEMPERATURE,
     CLIMATE_TEMPERATURE_INDOOR,
     CLIMATE_TEMPERATURE_STEP,
     CLIMATE_PRESET_MODE,
-    CLIMATE_SWING_MODE,
     ERV_POWER,
     ERV_FAN_SPEED,
     ERV_OPERATING_MODE,
@@ -95,8 +87,6 @@ async def async_setup_entry(hass, entry, async_add_entities) -> bool:
 
 
 class PanasonicClimate(PanasonicBaseEntity, ClimateEntity):
-    _swing_mode = SWING_OFF
-
     def __init__(
         self,
         coordinator,
@@ -117,10 +107,6 @@ class PanasonicClimate(PanasonicBaseEntity, ClimateEntity):
 
         preset_mode = False
         if self._device_type == DEVICE_TYPE_CLIMATE:
-            if (status.get(CLIMATE_SWING_VERTICAL_LEVEL, None) is not None and
-                (status.get(CLIMATE_SWING_HORIZONTAL_LEVEL, None) is not None)):
-                features |= ClimateEntityFeature.SWING_MODE
-
             if status.get(CLIMATE_FAN_SPEED, None) is not None:
                 features |= ClimateEntityFeature.FAN_MODE
 
@@ -317,81 +303,6 @@ class PanasonicClimate(PanasonicBaseEntity, ClimateEntity):
         device_id = self.device_id
 
         await self.client.set_device(gwid, device_id, fan_mode, value)
-        await self.client.update_device(gwid, device_id)
-        self.async_write_ha_state()
-
-    @property
-    def swing_mode(self) -> str:
-        """Return the swing setting."""
-        status = self.get_status(self.coordinator.data)
-
-        swing_vertical = status.get(CLIMATE_SWING_VERTICAL_LEVEL, None)
-        swing_horizontal = status.get(CLIMATE_SWING_HORIZONTAL_LEVEL, None)
-        #if swing_horizontal is None or swing_vertical is None:
-        #    return STATE_UNAVAILABLE
-        swing_vertical = bool(swing_vertical)
-        swing_horizontal = bool(swing_horizontal)
-        mode = SWING_OFF
-        if swing_vertical or swing_horizontal:
-            mode = SWING_ON
-
-        if swing_vertical and swing_horizontal:
-            mode = SWING_BOTH
-
-        elif swing_vertical:
-            mode = SWING_VERTICAL
-
-        elif swing_horizontal:
-            mode = SWING_HORIZONTAL
-
-        self._swing_mode = mode
-        return mode
-
-    @property
-    def swing_modes(self) -> list:
-        """Return the list of available swing modes.
-
-        Requires ClimateEntityFeature.SWING_MODE.
-        """
-        status = self.get_status(self.coordinator.data)
-        swing_modes = [SWING_ON, SWING_OFF]
-
-        swing_vertical = status.get(CLIMATE_SWING_VERTICAL_LEVEL, None)
-        if swing_vertical is not None:
-            swing_modes.append(SWING_VERTICAL)
-
-        swing_horizontal = status.get(CLIMATE_SWING_HORIZONTAL_LEVEL, None)
-        if swing_horizontal is not None:
-            swing_modes.append(SWING_HORIZONTAL)
-
-        if swing_vertical is not None and swing_horizontal  is not None:
-            swing_modes.append(SWING_BOTH)
-
-        return swing_modes
-
-    async def async_set_swing_mode(self, swing_mode) -> None:
-        """Set new target swing operation."""
-        gwid = self.device_gwid
-        device_id = self.device_id
-
-        if swing_mode == SWING_ON:
-            if self._swing_mode == SWING_HORIZONTAL:
-                mode = 1
-            if self._swing_mode == SWING_VERTICAL:
-                mode = 2
-
-        elif swing_mode == SWING_OFF:
-            mode = 0
-
-        elif swing_mode == SWING_HORIZONTAL:
-            mode = 1
-        elif swing_mode == SWING_VERTICAL:
-            mode = 2
-
-        elif swing_mode == SWING_BOTH:
-            mode = 4
-
-        await self.client.set_device(gwid, device_id, CLIMATE_SWING_MODE, mode)
         await self.client.update_device(gwid, device_id)
         self.async_write_ha_state()
 
