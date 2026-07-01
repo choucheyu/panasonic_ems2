@@ -8,7 +8,9 @@ sensors, selects, switches, and numbers.
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from tests.helpers.source_parsing import (
@@ -205,11 +207,160 @@ def test_available_climate_with_empty_summary_status_is_polled() -> None:
     ) is False
     assert cloud_commands.should_poll_device_with_empty_summary_status(
         {
+            "DeviceType": str(env["DEVICE_TYPE_CLIMATE"]),
+            "ModelType": "UXFA",
+            "Devices": [{"DeviceID": 1, "IsAvailable": "false"}],
+        }
+    ) is False
+    assert cloud_commands.should_poll_device_with_empty_summary_status(
+        {
             "DeviceType": str(env["DEVICE_TYPE_WASHING_MACHINE"]),
             "ModelType": "HDH",
             "Devices": [{"DeviceID": 1, "IsAvailable": 1}],
         }
     ) is False
+
+
+async def _no_delay_sleep(_delay: float) -> None:
+    return None
+
+
+def _get_devices_with_info_globals() -> dict[str, Any]:
+    env = _runtime_env()
+    cloud_commands = _load_core_module("cloud_commands")
+    env.update(
+        {
+            "asyncio": SimpleNamespace(sleep=_no_delay_sleep),
+            "apis": SimpleNamespace(get_device_status=lambda: "UserGetDeviceStatus"),
+            "should_poll_device_with_empty_summary_status": (
+                cloud_commands.should_poll_device_with_empty_summary_status
+            ),
+        }
+    )
+    return env
+
+
+def _blank_status_response(gwid: str) -> dict[str, Any]:
+    return {"GwList": [{"GWID": gwid, "List": [{"CommandType": "0x00", "Status": ""}]}]}
+
+
+class _GetDevicesWithInfoClient:
+    def __init__(
+        self,
+        *,
+        device: dict[str, Any],
+        response: dict[str, Any],
+        existing_information: list[dict[str, Any]] | None = None,
+    ) -> None:
+        self._device = device
+        self._response = response
+        self._commands = []
+        self._commands_info = {}
+        self._cp_token = "-".join(("test", "token"))
+        self._select_devices = []
+        self._api_counts_per_hour = 100
+        self._devices_info = {device["GWID"]: dict(device)}
+        if existing_information is not None:
+            self._devices_info[device["GWID"]]["Information"] = existing_information
+        self.command_requests: list[tuple[Any, ...]] = []
+        self.info_requests: list[str] = []
+        self.supplemental_requests: list[str] = []
+
+    async def get_user_devices(self) -> list[dict[str, Any]]:
+        return [self._device]
+
+    def _refactor_cmds_paras(self, _commands_info: dict[str, Any]) -> None:
+        return None
+
+    async def request(self, **_kwargs: Any) -> dict[str, Any]:
+        return self._response
+
+    def is_supported(self, _model_type: str) -> bool:
+        return True
+
+    def _get_commands(self, device_type: str, model_type: str, model: str) -> list[dict[str, str]]:
+        self.command_requests.append((device_type, model_type, model))
+        return [{"CommandType": "0x00"}]
+
+    async def get_device_with_info(self, device: dict[str, Any], _func: list[dict[str, str]]) -> None:
+        self.info_requests.append(device["GWID"])
+        self._devices_info[device["GWID"]]["Information"] = [
+            {"DeviceID": 1, "status": {"0x00": "1"}}
+        ]
+
+    def _get_supplemental_keys(self, device: dict[str, Any]) -> list[str]:
+        self.supplemental_requests.append(device["GWID"])
+        return []
+
+    async def get_plate_info(self, *_args: Any, **_kwargs: Any) -> None:
+        raise AssertionError("weight-plate path should not run")
+
+    async def get_user_info(self) -> bool:
+        return True
+
+    async def get_update_info(self, _check: bool = False) -> bool:
+        return True
+
+
+def test_get_devices_with_info_polls_available_uxfa_climate_with_blank_summary_status() -> None:
+    env = _get_devices_with_info_globals()
+    get_devices_with_info = load_method_function(
+        CLOUD_PATH,
+        class_name="PanasonicSmartHome",
+        method_name="get_devices_with_info",
+        globals_env=env,
+    )
+    device = {
+        "GWID": "GWID_CLIMATE",
+        "DeviceType": str(env["DEVICE_TYPE_CLIMATE"]),
+        "ModelType": "UXFA",
+        "Model": "CS-UX28FA2",
+        "Devices": [{"DeviceID": 1, "IsAvailable": 1}],
+    }
+    client = _GetDevicesWithInfoClient(
+        device=device,
+        response=_blank_status_response("GWID_CLIMATE"),
+    )
+
+    asyncio.run(get_devices_with_info(client))
+
+    assert client.info_requests == ["GWID_CLIMATE"]
+    assert client.command_requests == [
+        (str(env["DEVICE_TYPE_CLIMATE"]), "UXFA", "CS-UX28FA2")
+    ]
+    assert client._devices_info["GWID_CLIMATE"]["Information"] == [
+        {"DeviceID": 1, "status": {"0x00": "1"}}
+    ]
+
+
+def test_get_devices_with_info_preserves_washer_blank_summary_without_polling() -> None:
+    env = _get_devices_with_info_globals()
+    get_devices_with_info = load_method_function(
+        CLOUD_PATH,
+        class_name="PanasonicSmartHome",
+        method_name="get_devices_with_info",
+        globals_env=env,
+    )
+    existing_information = [{"DeviceID": 1, "status": {"0x50": "2"}}]
+    device = {
+        "GWID": "GWID_WASHER",
+        "DeviceType": str(env["DEVICE_TYPE_WASHING_MACHINE"]),
+        "ModelType": "HDH",
+        "Model": "NA-V160HDH",
+        "Devices": [{"DeviceID": 1, "IsAvailable": 1}],
+    }
+    client = _GetDevicesWithInfoClient(
+        device=device,
+        response=_blank_status_response("GWID_WASHER"),
+        existing_information=existing_information,
+    )
+
+    asyncio.run(get_devices_with_info(client))
+
+    assert client.info_requests == []
+    assert client.command_requests == []
+    assert client.supplemental_requests == []
+    assert client._devices_info["GWID_WASHER"]["Information"] == existing_information
 
 
 def test_dsh_washer_has_model_specific_current_progress_sensor() -> None:

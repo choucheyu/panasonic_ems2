@@ -108,10 +108,12 @@ DECLARED_COMMAND_POLLING_DEVICE_TYPES = (
 
 def _is_truthy_available(value: Any) -> bool:
     """Return whether a Panasonic availability field means available."""
+    if isinstance(value, bool):
+        return value
     try:
-        return bool(int(value))
+        return int(value) == 1
     except (TypeError, ValueError):
-        return bool(value)
+        return False
 
 
 def should_poll_device_with_empty_summary_status(device: Mapping[str, Any]) -> bool:

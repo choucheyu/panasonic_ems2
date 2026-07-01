@@ -734,11 +734,11 @@ class PanasonicSmartHome(object):
                 # No status code, it may be offline, powered off, or a summary-status gap.
                 if should_poll_device_with_empty_summary_status(device):
                     gwid_status[gwid] = "force update"
-                elif device_type in [str(DEVICE_TYPE_WASHING_MACHINE)]:
-                    # Panasonic cloud 對洗衣機偶發回空 status 時，只能視為 transient unknown。
-                    # 保留上一筆有效 Information；沒有上一筆時才設為空，避免把 0x74/0x50 等狀態 fake 成 0。
-                    self._devices_info[gwid].setdefault("Information", [])
                 else:
+                    if device_type in [str(DEVICE_TYPE_WASHING_MACHINE)]:
+                        # Panasonic cloud 對洗衣機偶發回空 status 時，只能視為 transient unknown。
+                        # 保留上一筆有效 Information；沒有上一筆時才設為空，避免把 0x74/0x50 等狀態 fake 成 0。
+                        self._devices_info[gwid].setdefault("Information", [])
                     continue
 
             if not self.is_supported(model_type):
