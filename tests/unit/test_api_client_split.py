@@ -8,6 +8,7 @@ import importlib.util
 import logging
 import sys
 import types
+from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
 from types import SimpleNamespace
@@ -372,3 +373,54 @@ def test_token_store_module_defines_load_save_account_count_and_stop_listener_se
     core_exceptions_source = CORE_EXCEPTIONS.read_text(encoding="utf-8")
     assert "from ..api.endpoints import" in core_apis_source
     assert "from ..api.errors import" in core_exceptions_source
+
+
+def _active_account_count_method():
+    return load_method_function(
+        API_PACKAGE / "token_store.py",
+        class_name="PanasonicTokenStore",
+        method_name="active_account_count",
+        globals_env={
+            "datetime": datetime,
+            "CONF_TOKEN_TIMEOUT": "cptoken_timeout",
+        },
+    )
+
+
+class _FakeTokenStore:
+    def __init__(self, payload) -> None:
+        self._payload = payload
+
+    async def async_load(self):
+        return self._payload
+
+
+class _FakePanasonicTokenStore:
+    def __init__(self, payload) -> None:
+        self._store = _FakeTokenStore(payload)
+
+
+def test_token_store_active_account_count_ignores_null_token_timeout() -> None:
+    active_account_count = _active_account_count_method()
+    store = _FakePanasonicTokenStore(
+        {
+            "ACCOUNT_REDACTED_1": {"cptoken_timeout": None},
+            "ACCOUNT_REDACTED_2": {"cptoken_timeout": "20991231235959"},
+        }
+    )
+
+    assert asyncio.run(active_account_count(store, datetime(2026, 7, 1))) == 1
+
+
+def test_token_store_active_account_count_keeps_safe_floor_for_invalid_storage() -> None:
+    active_account_count = _active_account_count_method()
+    store = _FakePanasonicTokenStore(
+        {
+            "ACCOUNT_REDACTED_1": {"cptoken_timeout": None},
+            "ACCOUNT_REDACTED_2": {"cptoken_timeout": ""},
+            "ACCOUNT_REDACTED_3": {},
+            "ACCOUNT_REDACTED_4": None,
+        }
+    )
+
+    assert asyncio.run(active_account_count(store, datetime(2026, 7, 1))) == 1

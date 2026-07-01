@@ -11,5 +11,5 @@
   "documentation": "https://github.com/choucheyu/panasonic_ems2",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/choucheyu/panasonic_ems2/issues",
-  "version": "0.3.2"
+  "version": "0.3.3"
 }

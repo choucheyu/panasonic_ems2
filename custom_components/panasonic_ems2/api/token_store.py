@@ -54,22 +54,39 @@ class PanasonicTokenStore:
         if now is None:
             now = datetime.now()
 
+        def parse_token_timeout(token_timeout) -> datetime | None:
+            if (
+                not isinstance(token_timeout, str)
+                or len(token_timeout) != 14
+                or not token_timeout.isdigit()
+            ):
+                return None
+
+            try:
+                return datetime(
+                    int(token_timeout[:4]),
+                    int(token_timeout[4:6]),
+                    int(token_timeout[6:8]),
+                    int(token_timeout[8:10]),
+                    int(token_timeout[10:12]),
+                    int(token_timeout[12:])
+                )
+            except ValueError:
+                return None
+
         accounts = 0
         for _, value in data.items():
-            token_timeout = value[CONF_TOKEN_TIMEOUT]
-            timeout = datetime(
-                int(token_timeout[:4]),
-                int(token_timeout[4:6]),
-                int(token_timeout[6:8]),
-                int(token_timeout[8:10]),
-                int(token_timeout[10:12]),
-                int(token_timeout[12:])
-            )
+            if not isinstance(value, dict):
+                continue
+
+            timeout = parse_token_timeout(value.get(CONF_TOKEN_TIMEOUT))
+            if timeout is None:
+                continue
 
             if int(timeout.timestamp() - now.timestamp()) > 0:
                 accounts = accounts + 1
 
-        return accounts
+        return max(accounts, 1)
 
     def async_listen_save_on_stop(self, tokens_provider: Callable[[], dict]) -> None:
         """Save latest tokens once when Home Assistant stops."""
