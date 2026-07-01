@@ -236,6 +236,8 @@ class PanasonicClimate(PanasonicBaseEntity, ClimateEntity):
                 preset_mode = mode
                 break
 
+        if is_on is None:
+            return PRESET_NONE
         preset_mode = preset_mode if bool(int(is_on)) else PRESET_NONE
 
         return preset_mode
@@ -269,7 +271,7 @@ class PanasonicClimate(PanasonicBaseEntity, ClimateEntity):
         self.async_write_ha_state()
 
     @property
-    def fan_mode(self) -> str:
+    def fan_mode(self) -> str | None:
         """Return the fan setting."""
         status = self.get_status(self.coordinator.data)
         if self._device_type == DEVICE_TYPE_ERV:
@@ -280,8 +282,8 @@ class PanasonicClimate(PanasonicBaseEntity, ClimateEntity):
             available_fan_modes = CLIMATE_AVAILABLE_FAN_MODES
 
         mode = status.get(fan_mode, None)
-        #if fan_mode is None:
-        #    return STATE_UNAVAILABLE
+        if mode is None:
+            return None
         value = get_key_from_dict(available_fan_modes, int(mode))
 
         return value

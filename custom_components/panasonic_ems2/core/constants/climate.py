@@ -62,6 +62,9 @@ CLIMATE_VX_COMMMANDS = [
 ]
 CLIMATE_UX_COMMMANDS = [
 ]
+# Panasonic cloud reports 2026 Taiwan CS-UX**FA2 models as ModelType UXFA;
+# keep it on the same conservative UX family capability set.
+CLIMATE_UXFA_COMMMANDS = CLIMATE_UX_COMMMANDS
 CLIMATE_UJ_COMMMANDS = [
 ]
 CLIMATE_UK_COMMMANDS = [
@@ -87,6 +90,7 @@ CLIMATE_UX_SUPPLEMENTAL_COMMANDS = [
                 # CLIMATE_HUMIDITY_INDOOR,
                 CLIMATE_VOICE,
             ]
+CLIMATE_UXFA_SUPPLEMENTAL_COMMANDS = CLIMATE_UX_SUPPLEMENTAL_COMMANDS
 CLIMATE_UJ_SUPPLEMENTAL_COMMANDS = [
                 # UJ 官方有「防霉監控」，但描述為每 24 小時固定啟動，
                 # 尚未確認是否等同 VX/UX 的 0x53 可寫開關，先保守關閉。
@@ -109,7 +113,7 @@ CLIMATE_UK_SUPPLEMENTAL_COMMANDS = [
                 # CLIMATE_VOICE,
             ]
 CLIMATE_PXGD_MODELS = [
-    "J-DUCT", "SX-DUCT", "GX", "LJ", "LX", "PX", "QX", "LJV", "PXGD", "VX", "UX", "UJ", "UK", "uk"
+    "J-DUCT", "SX-DUCT", "GX", "LJ", "LX", "PX", "QX", "LJV", "PXGD", "VX", "UX", "UXFA", "UJ", "UK", "uk"
 ]
 
 CLIMATE_PM10_MODELS = [
@@ -121,7 +125,7 @@ CLIMATE_PM10_2_MODELS = [
 ]
 
 CLIMATE_PM25_MODELS = [
-    "EHW", "GHW", "JHW", "JHV2", "VX", "UX"
+    "EHW", "GHW", "JHW", "JHV2", "VX", "UX", "UXFA"
 ]
 
 # Declarative range-family alias for climate option/range lookups.
@@ -134,6 +138,10 @@ CLIMATE_RANGE_FAMILY = {
         CLIMATE_FAN_SPEED: "PXGD",
     },
     "UX": {
+        CLIMATE_OPERATING_MODE: "PXGD",
+        CLIMATE_FAN_SPEED: "PXGD",
+    },
+    "UXFA": {
         CLIMATE_OPERATING_MODE: "PXGD",
         CLIMATE_FAN_SPEED: "PXGD",
     },

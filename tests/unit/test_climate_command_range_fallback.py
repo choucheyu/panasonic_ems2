@@ -55,6 +55,7 @@ def _climate_globals() -> dict[str, Any]:
         "DEVICE_TYPE_CLIMATE": env["DEVICE_TYPE_CLIMATE"],
         "DEVICE_TYPE_ERV": env["DEVICE_TYPE_ERV"],
         "CLIMATE_OPERATING_MODE": env["CLIMATE_OPERATING_MODE"],
+        "CLIMATE_POWER": env["CLIMATE_POWER"],
         "CLIMATE_FAN_SPEED": env["CLIMATE_FAN_SPEED"],
         "CLIMATE_RANGE_FAMILY": env["CLIMATE_RANGE_FAMILY"],
         "CLIMATE_AVAILABLE_MODES": {
@@ -63,6 +64,11 @@ def _climate_globals() -> dict[str, Any]:
             HVACMode.FAN_ONLY: 2,
             HVACMode.AUTO: 3,
             HVACMode.HEAT: 4,
+        },
+        "CLIMATE_AVAILABLE_PRESET_MODES": {
+            "0x1A": "Boost",
+            "0x1B": "Eco",
+            "0x05": "Sleep",
         },
         "CLIMATE_AVAILABLE_FAN_MODES": {
             "Auto": 0,
@@ -73,7 +79,10 @@ def _climate_globals() -> dict[str, Any]:
             "5": 5,
             "6": 6,
         },
+        "PRESET_NONE": "none",
+        "ERV_POWER": "0xERV_POWER",
         "ERV_OPERATING_MODE": "0xERV_MODE",
+        "ERV_FAN_SPEED": "0xERV_FAN_SPEED",
         "ERV_AVAILABLE_MODES": {"erv_auto": 0},
         "ERV_AVAILABLE_FAN_MODES": {"erv_auto": 0},
     }
@@ -83,6 +92,10 @@ def _climate_globals() -> dict[str, Any]:
     )
     globals_env["_fallback_climate_fan_modes"] = _load_top_level_function(
         "_fallback_climate_fan_modes",
+        globals_env,
+    )
+    globals_env["get_key_from_dict"] = _load_top_level_function(
+        "get_key_from_dict",
         globals_env,
     )
     return globals_env
@@ -95,6 +108,15 @@ def _climate_entity(model_type: str) -> SimpleNamespace:
         client=_EmptyRangeClient(),
         device_gwid="GWID_CLIMATE",
         info={"ModelType": model_type},
+    )
+
+
+def _climate_entity_without_status() -> SimpleNamespace:
+    env = load_constant_assignments(CONST_PATH)
+    return SimpleNamespace(
+        _device_type=env["DEVICE_TYPE_CLIMATE"],
+        coordinator=SimpleNamespace(data={}),
+        get_status=lambda _data: {},
     )
 
 
@@ -142,3 +164,25 @@ def test_climate_with_missing_fan_range_falls_back_to_auto_and_levels_one_to_fiv
     )
 
     assert fan_modes(_climate_entity("UNKNOWN")) == ["Auto", "1", "2", "3", "4", "5"]
+
+
+def test_climate_fan_mode_returns_none_when_status_is_absent() -> None:
+    fan_mode = load_method_function(
+        CLIMATE_PLATFORM,
+        class_name="PanasonicClimate",
+        method_name="fan_mode",
+        globals_env=_climate_globals(),
+    )
+
+    assert fan_mode(_climate_entity_without_status()) is None
+
+
+def test_climate_preset_mode_returns_none_option_when_status_is_absent() -> None:
+    preset_mode = load_method_function(
+        CLIMATE_PLATFORM,
+        class_name="PanasonicClimate",
+        method_name="preset_mode",
+        globals_env=_climate_globals(),
+    )
+
+    assert preset_mode(_climate_entity_without_status()) == "none"

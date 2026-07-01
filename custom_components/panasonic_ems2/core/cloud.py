@@ -23,7 +23,7 @@ from ..api.errors import (
 )
 from ..api.token_store import PanasonicTokenStore
 from .capabilities import command_name_override, command_range_override, range_lookup_models, set_command_id
-from .cloud_commands import DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS, build_light_device_command_types, build_polling_command_types, chunk_command_type_payload, filter_supplemental_snapshot, get_supplemental_keys, merge_supplemental_status, no_remote_command_types_for_model, remote_command_types_for_model
+from .cloud_commands import DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS, build_light_device_command_types, build_polling_command_types, chunk_command_type_payload, filter_supplemental_snapshot, get_supplemental_keys, merge_supplemental_status, no_remote_command_types_for_model, remote_command_types_for_model, should_poll_device_with_empty_summary_status
 from .cloud_status import build_offline_information, merge_device_information_chunks, normalize_command_status, refactor_device_information
 from .command_metadata import refactor_command_metadata
 from .statistics_builder import build_user_info_external_statistics_rows
@@ -706,6 +706,8 @@ class PanasonicSmartHome(object):
                 gwid_status[gwid] = status
 
         for device in devices:
+            if not isinstance(device, dict):
+                continue
             gwid = device["GWID"]
             device_type = device["DeviceType"]
             model_type = device["ModelType"]
@@ -729,13 +731,15 @@ class PanasonicSmartHome(object):
                 gwid_status[gwid] = "force update"
 
             if len(gwid_status[gwid]) < 1:
-                # No status code, it maybe offline or power off of washing machine or network busy
-                # _LOGGER.warning(f"gwid {gwid} is offline {self._devices_info[gwid]}!")
-                if device_type in [str(DEVICE_TYPE_WASHING_MACHINE)]:
+                # No status code, it may be offline, powered off, or a summary-status gap.
+                if should_poll_device_with_empty_summary_status(device):
+                    gwid_status[gwid] = "force update"
+                elif device_type in [str(DEVICE_TYPE_WASHING_MACHINE)]:
                     # Panasonic cloud 對洗衣機偶發回空 status 時，只能視為 transient unknown。
                     # 保留上一筆有效 Information；沒有上一筆時才設為空，避免把 0x74/0x50 等狀態 fake 成 0。
                     self._devices_info[gwid].setdefault("Information", [])
-                continue
+                else:
+                    continue
 
             if not self.is_supported(model_type):
                 continue

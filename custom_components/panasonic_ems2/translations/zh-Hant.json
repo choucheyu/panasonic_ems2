@@ -18,6 +18,12 @@
                     "password": "密碼"
                 },
                 "description": "請使用您的 Panasonic 智慧家電帳號登入。"
+            },
+            "select": {
+                "data": {
+                    "select_devices": "要加入 Home Assistant 的裝置"
+                },
+                "description": "請選擇要設定的 Panasonic 裝置。"
             }
         }
     },

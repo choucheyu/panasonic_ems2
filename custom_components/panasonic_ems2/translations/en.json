@@ -18,6 +18,12 @@
                     "password": "Password"
                 },
             "description": "Sign in with your Panasonic Smart Home credentials."
+            },
+            "select": {
+                "data": {
+                    "select_devices": "Devices to add to Home Assistant"
+                },
+                "description": "Select the Panasonic devices to set up."
             }
         }
     },

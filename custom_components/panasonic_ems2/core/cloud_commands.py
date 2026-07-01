@@ -10,7 +10,9 @@ from typing import Any, Mapping, Sequence
 
 from .capabilities import commands_for_model, supplemental_commands_for_model
 from .constants.common import (
+    DEVICE_TYPE_CLIMATE,
     DEVICE_TYPE_DRYER,
+    DEVICE_TYPE_ERV,
     DEVICE_TYPE_FRIDGE,
     DEVICE_TYPE_LIGHT,
     DEVICE_TYPE_WASHING_MACHINE,
@@ -104,6 +106,35 @@ DECLARED_COMMAND_POLLING_DEVICE_TYPES = (
 )
 
 
+def _is_truthy_available(value: Any) -> bool:
+    """Return whether a Panasonic availability field means available."""
+    try:
+        return bool(int(value))
+    except (TypeError, ValueError):
+        return bool(value)
+
+
+def should_poll_device_with_empty_summary_status(device: Mapping[str, Any]) -> bool:
+    """Return whether DeviceGetInfo should run when UserGetDeviceStatus is blank.
+
+    Panasonic climate devices may be online/available while UserGetDeviceStatus
+    returns empty strings for all summary rows (observed for UXFA / CS-UX**FA2).
+    In that case, still perform the read-only DeviceGetInfo snapshot instead of
+    skipping entity data creation. Keep laundry behavior unchanged because an
+    empty washing-machine summary can mean powered-off/offline and must not be
+    zero-filled or over-polled.
+    """
+    if str(device.get("DeviceType", "")) not in {str(DEVICE_TYPE_CLIMATE), str(DEVICE_TYPE_ERV)}:
+        return False
+
+    for sub_device in device.get("Devices", []) or []:
+        if not isinstance(sub_device, Mapping):
+            continue
+        if _is_truthy_available(sub_device.get("IsAvailable")):
+            return True
+    return False
+
+
 def get_supplemental_keys(device: dict[str, Any], *, capability_registry: Mapping[str, Any]) -> list[str]:
     """Return isolated supplemental command keys for this device/model."""
     device_type = str(device.get("DeviceType", ""))
@@ -143,7 +174,7 @@ def build_polling_command_types(
     }:
         return _command_type_payload(no_remote_command_types)
 
-    if not has_remote_commands:
+    if not has_remote_commands and str(device_type) not in {str(DEVICE_TYPE_CLIMATE), str(DEVICE_TYPE_ERV)}:
         return list(DEFAULT_POWER_COMMAND_TYPES)
 
     fallback_extra_commands = None

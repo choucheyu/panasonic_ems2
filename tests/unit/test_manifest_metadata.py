@@ -54,4 +54,6 @@ def test_translation_files_parse_and_cover_required_sections() -> None:
         assert "options" in data, translation_file
         assert "system_health" in data, translation_file
         assert "user" in data["config"]["step"], translation_file
+        assert "select" in data["config"]["step"], translation_file
+        assert "select_devices" in data["config"]["step"]["select"]["data"], translation_file
         assert "init" in data["options"]["step"], translation_file

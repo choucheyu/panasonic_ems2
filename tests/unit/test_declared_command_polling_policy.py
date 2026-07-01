@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from tests.helpers.source_parsing import (
+    _load_core_module,
     add_capability_runtime_globals,
     load_constant_assignments,
     load_method_function,
@@ -159,6 +160,56 @@ def test_cloud_get_commands_uses_declared_policy_without_shrinking_climate() -> 
     assert env["CLIMATE_TEMPERATURE_INDOOR"] in climate_commands
     assert env["CLIMATE_AIRFRESH_MODE"] in climate_commands
     assert env["CLIMATE_SWING_VERTICAL_LEVEL"] in climate_commands
+
+
+def test_empty_global_commandlist_keeps_uxfa_climate_local_polling() -> None:
+    env = _runtime_env()
+    payload = env["build_polling_command_types"](
+        env["DEVICE_TYPE_CLIMATE"],
+        "UXFA",
+        has_remote_commands=False,
+        remote_command_types=None,
+        capability_registry=env["CAPABILITY_REGISTRY"],
+        model_jp_types=env["MODEL_JP_TYPES"],
+    )
+
+    commands = _command_type_values(payload)
+
+    assert commands != [env["CLIMATE_POWER"]]
+    assert env["CLIMATE_POWER"] in commands
+    assert env["CLIMATE_OPERATING_MODE"] in commands
+    assert env["CLIMATE_FAN_SPEED"] in commands
+    assert env["CLIMATE_TARGET_TEMPERATURE"] in commands
+    assert env["CLIMATE_TEMPERATURE_INDOOR"] in commands
+    assert env["CLIMATE_SWING_VERTICAL_LEVEL"] in commands
+
+
+def test_available_climate_with_empty_summary_status_is_polled() -> None:
+    env = _runtime_env()
+    cloud_commands = _load_core_module("cloud_commands")
+
+    assert cloud_commands.should_poll_device_with_empty_summary_status(
+        {
+            "DeviceType": str(env["DEVICE_TYPE_CLIMATE"]),
+            "ModelType": "UXFA",
+            "Model": "CS-UX28FA2",
+            "Devices": [{"DeviceID": 1, "IsAvailable": 1}],
+        }
+    ) is True
+    assert cloud_commands.should_poll_device_with_empty_summary_status(
+        {
+            "DeviceType": str(env["DEVICE_TYPE_CLIMATE"]),
+            "ModelType": "UXFA",
+            "Devices": [{"DeviceID": 1, "IsAvailable": 0}],
+        }
+    ) is False
+    assert cloud_commands.should_poll_device_with_empty_summary_status(
+        {
+            "DeviceType": str(env["DEVICE_TYPE_WASHING_MACHINE"]),
+            "ModelType": "HDH",
+            "Devices": [{"DeviceID": 1, "IsAvailable": 1}],
+        }
+    ) is False
 
 
 def test_dsh_washer_has_model_specific_current_progress_sensor() -> None:

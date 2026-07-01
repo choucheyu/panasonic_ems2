@@ -62,6 +62,23 @@ def test_ux_uses_vx_like_supplemental_commands_without_unverified_humidity() -> 
     assert env["CLIMATE_HUMIDITY_INDOOR"] not in supplemental["UX"]
 
 
+def test_uxfa_aliases_existing_ux_family_without_unverified_humidity() -> None:
+    env = _load_const_assignments()
+    supplemental = _climate_supplemental(env)
+    extra_commands = _climate_extra_commands(env)
+    range_family = env["CLIMATE_RANGE_FAMILY"]
+    operating_mode = env["CLIMATE_OPERATING_MODE"]
+    fan_speed = env["CLIMATE_FAN_SPEED"]
+
+    assert extra_commands["UXFA"] == extra_commands["UX"]
+    assert supplemental["UXFA"] == supplemental["UX"]
+    assert env["CLIMATE_HUMIDITY_INDOOR"] not in supplemental["UXFA"]
+    assert "UXFA" in env["CLIMATE_PXGD_MODELS"]
+    assert "UXFA" in env["CLIMATE_PM25_MODELS"]
+    assert range_family["UXFA"][operating_mode] == "PXGD"
+    assert range_family["UXFA"][fan_speed] == "PXGD"
+
+
 def test_uj_and_uk_keep_high_risk_supplemental_commands_disabled() -> None:
     env = _load_const_assignments()
     supplemental = _climate_supplemental(env)
@@ -99,10 +116,10 @@ def test_new_model_types_are_registered_but_pm25_remains_conservative() -> None:
     pxgd_family = set(env["CLIMATE_PXGD_MODELS"])
     pm25_models = set(env["CLIMATE_PM25_MODELS"])
 
-    assert {"VX", "UX", "UJ", "UK", "uk"}.issubset(extra_commands)
-    assert {"VX", "UX", "UJ", "UK", "uk"}.issubset(pxgd_family)
+    assert {"VX", "UX", "UXFA", "UJ", "UK", "uk"}.issubset(extra_commands)
+    assert {"VX", "UX", "UXFA", "UJ", "UK", "uk"}.issubset(pxgd_family)
 
-    assert {"VX", "UX"}.issubset(pm25_models)
+    assert {"VX", "UX", "UXFA"}.issubset(pm25_models)
     assert "UJ" not in pm25_models
     assert "UK" not in pm25_models
     assert "uk" not in pm25_models
