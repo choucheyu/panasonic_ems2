@@ -149,43 +149,49 @@ def test_first_round_chart_sensor_entities_are_not_created() -> None:
     assert "USER_INFO_WASHER_SERIES_SENSORS" not in constants
 
 
-def test_user_info_statistics_queries_use_day_and_month_ranges() -> None:
+def test_user_info_statistics_queries_are_calendar_aligned() -> None:
+    """The cloud returns whole months (unit=day) / whole years (unit=month)
+    starting at day 1 / January whatever ``from`` says, so every window must
+    start there; previous + current period form one series per grain."""
     _, build_requests = _load_cloud_method("_user_info_statistics_requests")
 
-    requests = build_requests(None, dt.datetime(2026, 6, 26, 12, 0))
-    by_range = {request["range_key"]: request for request in requests}
+    day_windows, month_windows = build_requests(None, dt.datetime(2026, 6, 26, 12, 0))
 
-    assert by_range["today"]["data"] == {
-        "name": "",
-        "from": "2026/06/26",
-        "unit": "day",
-        "max_num": 1,
-    }
-    assert by_range["current_month"]["data"] == {
-        "name": "",
-        "from": "2026/06/01",
-        "unit": "day",
-        "max_num": 26,
-    }
-    assert by_range["current_year"]["data"] == {
-        "name": "",
-        "from": "2026/01/01",
-        "unit": "month",
-        "max_num": 6,
-    }
-    assert by_range["last_30_days"]["data"] == {
-        "name": "",
-        "from": "2026/05/28",
-        "unit": "day",
-        "max_num": 30,
-    }
-    assert by_range["last_12_months"]["data"] == {
-        "name": "",
-        "from": "2025/07/01",
-        "unit": "month",
-        "max_num": 12,
-    }
-    assert all(request["data"]["unit"] in {"day", "month"} for request in requests)
+    assert [window["range_key"] for window in day_windows] == ["previous_month", "current_month"]
+    assert [window["data"] for window in day_windows] == [
+        {"name": "", "from": "2026/05/01", "unit": "day", "max_num": 31},
+        {"name": "", "from": "2026/06/01", "unit": "day", "max_num": 26},
+    ]
+    assert day_windows[0]["labels"][0] == "2026-05-01"
+    assert day_windows[0]["labels"][-1] == "2026-05-31"
+    assert day_windows[1]["labels"][-1] == "2026-06-26"
+
+    assert [window["range_key"] for window in month_windows] == ["previous_year", "current_year"]
+    assert [window["data"] for window in month_windows] == [
+        {"name": "", "from": "2025/01/01", "unit": "month", "max_num": 12},
+        {"name": "", "from": "2026/01/01", "unit": "month", "max_num": 6},
+    ]
+    assert month_windows[0]["labels"] == [f"2025-{month:02d}" for month in range(1, 13)]
+    assert month_windows[1]["labels"][-1] == "2026-06"
+    assert all(
+        window["data"]["unit"] in {"day", "month"}
+        for windows in (day_windows, month_windows)
+        for window in windows
+    )
+
+
+def test_user_info_statistics_queries_roll_over_year_and_leap_february() -> None:
+    _, build_requests = _load_cloud_method("_user_info_statistics_requests")
+
+    day_windows, month_windows = build_requests(None, dt.date(2026, 1, 1))
+    assert day_windows[0]["data"] == {"name": "", "from": "2025/12/01", "unit": "day", "max_num": 31}
+    assert day_windows[1]["data"] == {"name": "", "from": "2026/01/01", "unit": "day", "max_num": 1}
+    assert month_windows[0]["data"]["from"] == "2025/01/01"
+    assert month_windows[1]["data"] == {"name": "", "from": "2026/01/01", "unit": "month", "max_num": 1}
+
+    day_windows, _ = build_requests(None, dt.date(2028, 3, 10))
+    assert day_windows[0]["data"]["max_num"] == 29
+    assert day_windows[0]["labels"][-1] == "2028-02-29"
 
 
 def test_external_statistics_rows_keep_power_kwh_unscaled_and_use_running_sum() -> None:
@@ -206,18 +212,29 @@ def test_external_statistics_rows_keep_power_kwh_unscaled_and_use_running_sum() 
         }
 
     client = Client()
-    labels = ["2026-06-25", "2026-06-26"]
     rows = build_rows(
         client,
         "Power",
-        "last_30_days",
-        labels,
-        {
-            "GwList": [
-                {"GwID": "GWID_CLIMATE", "Total_kwh": "17.50", "kwh": [8.6, 8.9]},
-                {"GwID": "GWID_WASHER", "Total_kwh": "3.52", "kwh": [0.0, 3.52]},
-            ]
-        },
+        [
+            (
+                ["2026-05-31"],
+                {
+                    "GwList": [
+                        {"GwID": "GWID_CLIMATE", "Total_kwh": "40.0", "kwh": [1.0]},
+                        {"GwID": "GWID_WASHER", "Total_kwh": "2.0", "kwh": [0.5]},
+                    ]
+                },
+            ),
+            (
+                ["2026-06-25", "2026-06-26"],
+                {
+                    "GwList": [
+                        {"GwID": "GWID_CLIMATE", "Total_kwh": "17.50", "kwh": [8.6, 8.9]},
+                        {"GwID": "GWID_WASHER", "Total_kwh": "3.52", "kwh": [0.0, 3.52]},
+                    ]
+                },
+            ),
+        ],
     )
 
     climate = rows[0]
@@ -225,8 +242,9 @@ def test_external_statistics_rows_keep_power_kwh_unscaled_and_use_running_sum() 
     assert climate["metadata"]["name"] == "客廳空調 用電量"
     assert climate["metadata"]["unit_of_measurement"] == "kWh"
     assert climate["statistics"] == [
-        {"start": dt.datetime(2026, 6, 25, 0, 0, tzinfo=dt.timezone.utc), "state": 8.6, "sum": 8.6},
-        {"start": dt.datetime(2026, 6, 26, 0, 0, tzinfo=dt.timezone.utc), "state": 8.9, "sum": 17.5},
+        {"start": dt.datetime(2026, 5, 31, 0, 0, tzinfo=dt.timezone.utc), "state": 1.0, "sum": 1.0},
+        {"start": dt.datetime(2026, 6, 25, 0, 0, tzinfo=dt.timezone.utc), "state": 8.6, "sum": 9.6},
+        {"start": dt.datetime(2026, 6, 26, 0, 0, tzinfo=dt.timezone.utc), "state": 8.9, "sum": 18.5},
     ]
     assert client._devices_info["GWID_CLIMATE"]["Information"][0]["status"] == {}
 
@@ -246,19 +264,22 @@ def test_external_statistics_rows_cover_washer_water_and_count() -> None:
     rows = build_rows(
         Client(),
         "Other",
-        "current_month",
-        ["2026-06-25", "2026-06-26"],
-        {
-            "GwList": [
+        [
+            (
+                ["2026-06-25", "2026-06-26"],
                 {
-                    "GwID": "GWID_WASHER",
-                    "WM_WaterUsed_Total": 180.0,
-                    "WM_WaterUsed": [60.0, 120.0],
-                    "WM_WashTime_Total": 2,
-                    "WM_WashTime": [1.0, 1.0],
-                }
-            ]
-        },
+                    "GwList": [
+                        {
+                            "GwID": "GWID_WASHER",
+                            "WM_WaterUsed_Total": 180.0,
+                            "WM_WaterUsed": [60.0, 120.0],
+                            "WM_WashTime_Total": 2,
+                            "WM_WashTime": [1.0, 1.0],
+                        }
+                    ]
+                },
+            )
+        ],
     )
 
     by_id = {row["metadata"]["statistic_id"]: row for row in rows}
