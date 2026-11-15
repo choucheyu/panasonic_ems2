@@ -6,8 +6,7 @@ from datetime import datetime, timedelta
 import pytz
 from typing import Literal
 
-from homeassistant.components.recorder.models import StatisticData, StatisticMetaData, StatisticMeanType
-from homeassistant.components.recorder.statistics import async_add_external_statistics
+from homeassistant.components.recorder.models import StatisticMetaData, StatisticMeanType
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.const import UnitOfEnergy, UnitOfVolume
 from homeassistant.util.unit_conversion import EnergyConverter, VolumeConverter
@@ -27,6 +26,7 @@ from .cloud_commands import DEVICE_GET_INFO_REQUEST_TIMEOUT_SECONDS, build_light
 from .cloud_status import build_offline_information, merge_device_information_chunks, normalize_command_status, refactor_device_information
 from .command_metadata import refactor_command_metadata
 from .statistics_builder import build_user_info_external_statistics_rows
+from .statistics_recorder import async_import_series
 from .user_info_requests import build_user_info_statistics_requests
 from .user_info_series import parse_user_info_series
 from .const import (
@@ -419,12 +419,15 @@ class PanasonicSmartHome(object):
         return True
 
     def _user_info_statistics_requests(self, now=None):
-        """Build UserGetInfo statistics query ranges."""
+        """Build UserGetInfo statistics query windows grouped per grain."""
         return build_user_info_statistics_requests(now)
 
 
-    def _user_info_external_statistics(self, info_type, range_key, labels, response):
-        """Convert UserGetInfo bucket values to recorder external statistics rows."""
+    def _user_info_external_statistics(self, info_type, segments):
+        """Convert consecutive UserGetInfo windows to recorder external statistics rows.
+
+        ``segments`` is a list of ``(labels, response)`` pairs, oldest first.
+        """
         rows = []
         unit_class_map = {
             "energy": EnergyConverter.UNIT_CLASS,
@@ -435,16 +438,20 @@ class PanasonicSmartHome(object):
             "L": UnitOfVolume.LITERS,
         }
 
-        metrics = parse_user_info_series(
-            info_type,
-            response,
-            self._devices_info,
-            washing_machine_device_type=str(DEVICE_TYPE_WASHING_MACHINE),
-        )
+        metric_segments = [
+            (
+                labels,
+                parse_user_info_series(
+                    info_type,
+                    response,
+                    self._devices_info,
+                    washing_machine_device_type=str(DEVICE_TYPE_WASHING_MACHINE),
+                ),
+            )
+            for labels, response in segments
+        ]
         for row in build_user_info_external_statistics_rows(
-            metrics=metrics,
-            labels=labels,
-            range_key=range_key,
+            segments=metric_segments,
             devices_info=self._devices_info,
             domain=DOMAIN,
             timezone=local_tz,
@@ -465,8 +472,7 @@ class PanasonicSmartHome(object):
                             metadata["unit_of_measurement"], metadata["unit_of_measurement"]
                         ),
                     ),
-                    "statistics": [StatisticData(**data) for data in row["statistics"]],
-                    "range_key": row["range_key"],
+                    "statistics": row["statistics"],
                 }
             )
         return rows
@@ -486,26 +492,24 @@ class PanasonicSmartHome(object):
         )
         info_types = ["Power"] + (["Other"] if has_washer else [])
 
-        for request in self._user_info_statistics_requests(now):
+        for windows in self._user_info_statistics_requests(datetime.now(local_tz)):
             for info_type in info_types:
-                data = dict(request["data"])
-                data["name"] = info_type
-                response = await self.request(
-                    method="POST", headers=header, data=data, endpoint=apis.get_user_info()
-                )
-                if "GwList" not in response:
-                    continue
-                for row in self._user_info_external_statistics(
-                    info_type,
-                    request["range_key"],
-                    request["labels"],
-                    response,
-                ):
-                    async_add_external_statistics(
-                        self.hass,
-                        row["metadata"],
-                        row["statistics"],
+                segments = []
+                for window in windows:
+                    data = dict(window["data"])
+                    data["name"] = info_type
+                    response = await self.request(
+                        method="POST", headers=header, data=data, endpoint=apis.get_user_info()
                     )
+                    if "GwList" not in response:
+                        # Writing only part of the series would restart its sum.
+                        segments = None
+                        break
+                    segments.append((window["labels"], response))
+                if not segments:
+                    continue
+                for row in self._user_info_external_statistics(info_type, segments):
+                    await async_import_series(self.hass, row["metadata"], row["statistics"])
         self._user_info_series_last_update = now
         return True
 

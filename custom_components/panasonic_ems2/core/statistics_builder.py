@@ -50,6 +50,11 @@ def build_statistics_data(
     return statistics
 
 
+def rebase_statistics(statistics: Sequence[Mapping[str, Any]], base_sum: float) -> list[dict[str, Any]]:
+    """Shift every running ``sum`` by ``base_sum`` so a series continues an existing one."""
+    return [{**row, "sum": row["sum"] + base_sum} for row in statistics]
+
+
 def _grain_from_labels(labels: Sequence[str]) -> str:
     return "month" if labels and len(labels[0]) == 7 else "day"
 
@@ -61,23 +66,42 @@ def _device_name(gwid: str, devices_info: Mapping[str, Mapping[str, Any]]) -> st
 
 def build_user_info_external_statistics_rows(
     *,
-    metrics: Sequence[Mapping[str, Any]],
-    labels: Sequence[str],
-    range_key: str,
+    segments: Sequence[tuple[Sequence[str], Sequence[Mapping[str, Any]]]],
     devices_info: Mapping[str, Mapping[str, Any]],
     domain: str,
     timezone: tzinfo,
 ) -> list[dict[str, Any]]:
-    """Build recorder-agnostic external statistics rows for UserGetInfo metrics."""
-    grain = _grain_from_labels(labels)
+    """Build recorder-agnostic external statistics rows for UserGetInfo metrics.
+
+    ``segments`` are ``(labels, metrics)`` pairs for consecutive windows of one
+    grain (oldest first). Each metric is joined across all segments into one
+    series with a single running sum, so one statistic id has exactly one
+    writer per refresh. Values are paired with labels per segment, so a short
+    segment cannot shift the dates of the next one. A metric missing from any
+    segment is skipped rather than written with a gap in its sum.
+    """
+    if not segments:
+        return []
+
+    grain = _grain_from_labels(segments[0][0])
+    series: dict[tuple[str, str], dict[str, Any]] = {}
+    for segment_index, (labels, metrics) in enumerate(segments):
+        for metric in metrics:
+            values = metric.get("values", [])
+            if not values:
+                continue
+            key = (str(metric["gwid"]), str(metric["suffix"]))
+            entry = series.setdefault(key, {"metric": metric, "labels": [], "values": [], "segments": set()})
+            pairs = list(zip(labels, values))
+            entry["labels"].extend(label for label, _ in pairs)
+            entry["values"].extend(value for _, value in pairs)
+            entry["segments"].add(segment_index)
+
     rows: list[dict[str, Any]] = []
-
-    for metric in metrics:
-        values = metric.get("values", [])
-        if not values:
+    for (gwid, _suffix), entry in series.items():
+        if len(entry["segments"]) != len(segments):
             continue
-
-        gwid = str(metric["gwid"])
+        metric = entry["metric"]
         safe_gwid = safe_statistic_object_id(gwid)
         metric_suffix = f"{metric['suffix']}_{grain}"
         rows.append(
@@ -91,8 +115,7 @@ def build_user_info_external_statistics_rows(
                     "unit_class": metric["unit_class"],
                     "unit_of_measurement": metric["unit"],
                 },
-                "statistics": build_statistics_data(labels, values, timezone=timezone),
-                "range_key": range_key,
+                "statistics": build_statistics_data(entry["labels"], entry["values"], timezone=timezone),
             }
         )
 

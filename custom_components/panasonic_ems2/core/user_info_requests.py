@@ -1,68 +1,77 @@
 """UserGetInfo request-window helpers.
 
 Kept Home Assistant independent so date/range behavior can be tested without HA.
+
+The Panasonic cloud aligns every UserGetInfo window to a calendar boundary and
+ignores the rest of ``from``:
+
+* ``unit: day`` returns the month that contains ``from``, starting on day 1.
+  ``from: 2026/10/17, max_num: 30`` returns 2026-10-01 .. 2026-10-30.
+* ``unit: month`` returns the year that contains ``from``, starting in January.
+  ``from: 2025/12/01, max_num: 12`` returns 2025-01 .. 2025-12.
+
+``max_num`` only truncates (or pads with zeros past the end of the period), so
+windows must start on the first day of a month / the first month of a year and
+labels must be derived from the calendar, not from the response length.
+Daily power is only retained for the current and previous month.
 """
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+import calendar
+from datetime import date, datetime
 from typing import Any
 
 
-def build_user_info_statistics_requests(now: datetime | None = None) -> list[dict[str, Any]]:
-    """Build UserGetInfo statistics query ranges."""
+def _day_labels(year: int, month: int, count: int) -> list[str]:
+    return [f"{year:04d}-{month:02d}-{day:02d}" for day in range(1, count + 1)]
+
+
+def _month_labels(year: int, count: int) -> list[str]:
+    return [f"{year:04d}-{month:02d}" for month in range(1, count + 1)]
+
+
+def _day_window(range_key: str, year: int, month: int, count: int) -> dict[str, Any]:
+    return {
+        "range_key": range_key,
+        "data": {"name": "", "from": f"{year:04d}/{month:02d}/01", "unit": "day", "max_num": count},
+        "labels": _day_labels(year, month, count),
+    }
+
+
+def _month_window(range_key: str, year: int, count: int) -> dict[str, Any]:
+    return {
+        "range_key": range_key,
+        "data": {"name": "", "from": f"{year:04d}/01/01", "unit": "month", "max_num": count},
+        "labels": _month_labels(year, count),
+    }
+
+
+def build_user_info_statistics_requests(now: datetime | date | None = None) -> list[list[dict[str, Any]]]:
+    """Build UserGetInfo statistics query windows, grouped per statistics grain.
+
+    Each group is ordered oldest first and covers one contiguous series that is
+    written to a single statistic id: previous + current month for day
+    buckets, previous + current year for month buckets. Future buckets are
+    never requested.
+    """
     if now is None:
         now = datetime.today()
     today = now.date() if isinstance(now, datetime) else now
 
-    def first_day_months_ago(months_ago: int):
-        month_index = today.year * 12 + today.month - 1 - months_ago
-        year = month_index // 12
-        month = month_index % 12 + 1
-        return today.replace(year=year, month=month, day=1)
-
-    def day_labels(start, count: int):
-        return [(start + timedelta(days=idx)).strftime("%Y-%m-%d") for idx in range(count)]
-
-    def month_labels(start, count: int):
-        labels = []
-        for idx in range(count):
-            month_index = start.year * 12 + start.month - 1 + idx
-            year = month_index // 12
-            month = month_index % 12 + 1
-            labels.append(f"{year:04d}-{month:02d}")
-        return labels
-
-    month_start = today.replace(day=1)
-    year_start = today.replace(month=1, day=1)
-    last_30_start = today - timedelta(days=29)
-    last_12_month_start = first_day_months_ago(11)
-    current_month_days = (today - month_start).days + 1
+    if today.month == 1:
+        prev_month_year, prev_month = today.year - 1, 12
+    else:
+        prev_month_year, prev_month = today.year, today.month - 1
+    prev_month_days = calendar.monthrange(prev_month_year, prev_month)[1]
 
     return [
-        {
-            "range_key": "today",
-            "data": {"name": "", "from": today.strftime("%Y/%m/%d"), "unit": "day", "max_num": 1},
-            "labels": day_labels(today, 1),
-        },
-        {
-            "range_key": "current_month",
-            "data": {"name": "", "from": month_start.strftime("%Y/%m/%d"), "unit": "day", "max_num": current_month_days},
-            "labels": day_labels(month_start, current_month_days),
-        },
-        {
-            "range_key": "current_year",
-            "data": {"name": "", "from": year_start.strftime("%Y/%m/%d"), "unit": "month", "max_num": today.month},
-            "labels": month_labels(year_start, today.month),
-        },
-        {
-            "range_key": "last_30_days",
-            "data": {"name": "", "from": last_30_start.strftime("%Y/%m/%d"), "unit": "day", "max_num": 30},
-            "labels": day_labels(last_30_start, 30),
-        },
-        {
-            "range_key": "last_12_months",
-            "data": {"name": "", "from": last_12_month_start.strftime("%Y/%m/%d"), "unit": "month", "max_num": 12},
-            "labels": month_labels(last_12_month_start, 12),
-        },
+        [
+            _day_window("previous_month", prev_month_year, prev_month, prev_month_days),
+            _day_window("current_month", today.year, today.month, today.day),
+        ],
+        [
+            _month_window("previous_year", today.year - 1, 12),
+            _month_window("current_year", today.year, today.month),
+        ],
     ]
